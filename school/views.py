@@ -541,17 +541,26 @@ class ModuleDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = Moduleserializer
 
 class PaymentList(generics.ListCreateAPIView):
+    """
+        This view
+            creates a payment for a class
+            gets all payment of a class
+    """
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
     def get_queryset(self):
         class_id = self.kwargs.get('class_id')
-        type = self.kwargs.get('type')
-        queryset = Payment.objects.filter(_class=class_id, type=type)
+        # type = self.kwargs.get('type')
+        queryset = Payment.objects.filter(_class=class_id)
 
         return queryset
     
 class StudentPaymentList(generics.ListCreateAPIView):
+    """
+        This view 
+            gets all payments made by students in a class
+    """
     queryset = StudentPayment.objects.all()
     serializer_class = StudentPaymentSerializer
 
@@ -559,7 +568,7 @@ class StudentPaymentList(generics.ListCreateAPIView):
         class_id = self.kwargs.get('class_id')
         type = self.kwargs.get('type')
 
-        _class = get_object_or_404(Class, pk=class_id)
+        # _class = get_object_or_404(Class, pk=class_id)
         
         student_payments = StudentPayment.objects.filter(
             student__in=Student.objects.filter(_class__payments__type=type, _class=class_id)
@@ -568,6 +577,10 @@ class StudentPaymentList(generics.ListCreateAPIView):
         return student_payments
     
 class StudentPaymentDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+        This view 
+            retrieve, delete and update payment made by a student
+    """
     queryset = StudentPayment.objects.all()
     serializer_class = StudentPaymentSerializer
 
