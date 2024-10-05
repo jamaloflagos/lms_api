@@ -1,5 +1,7 @@
 from django.db import models
 from rest_framework.authtoken.models import Token as DefaultToken
+import shortuuid
+
 
 # Create your models here. 
 class Class(models.Model):
@@ -78,12 +80,20 @@ class Student(models.Model):
         db_table = "student"
 
 class Course(models.Model):
+    OPEN = 'O'
+    WAITLISTED = 'W'
+    STATUS_CHOICES = [
+        (OPEN, 'Open'),
+        (WAITLISTED, 'Waitlisted')
+    ]
+    
     title = models.CharField(max_length=64)
     description = models.TextField()
-    picture = models.CharField(max_length=64)
+    image = models.ImageField(upload_to='course_images/', null=True, blank=True)
     _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="courses")
     creator = models.CharField(max_length=64)
-
+    course_status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=OPEN)
+ 
 class Module(models.Model):
     title = models.CharField(max_length=30)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="modules")
@@ -104,12 +114,13 @@ class Lesson(models.Model):
         return f"{self.id}"
 
     
-class Assignment(models.Model):
-    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE, related_name="assignment")
+class UnitTest(models.Model):
+    module = models.OneToOneField(Module, on_delete=models.CASCADE, related_name="tests")
     status = models.CharField(max_length=30)
     due_date = models.DateField()
     due_time = models.TimeField()
-    obtainable_score = models.IntegerField()
+    obtainable_mark = models.IntegerField()
+    tota_obtainable_mark = models.IntegerField()
     questions = models.JSONField(default=list)
 
     def __str__(self):
@@ -183,6 +194,38 @@ class Checkout(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="book_borrowed")
     days_requested = models.IntegerField()
 
+class StudyGroup(models.Model):
+    name = models.CharField(max_length=255)
+    group_name = models.CharField(max_length=128, blank=True, default=shortuuid.uuid)
+    description = models.TextField(blank=True)
+    students = models.ManyToManyField(Student, related_name='study_groups', blank=True)
+    students_online = models.ManyToManyField(Student, related_name='online_in_groups', blank=True)
+    creator = models.ForeignKey(Student, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_groups")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class Message(models.Model):
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(Student, on_delete=models.CASCADE)
+    content = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+
+class StudentPayment(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='payments')
+    balance = models.FloatField()
+    paid = models.FloatField()
+    history = models.JSONField(default=dict)
+
+class Payment(models.Model):
+    type = models.CharField(max_length=64)
+    amount = models.IntegerField()
+    _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='payments')
+
+    class Meta:
+        unique_together = ['type', '_class']
 
 # class TeacherToken(models.Model):
 #     key = models.CharField("Key", max_length=40, primary_key=True)

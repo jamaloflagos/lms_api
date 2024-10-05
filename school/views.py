@@ -1,6 +1,8 @@
 import random
 import string
 from django.http import Http404, HttpResponseBadRequest
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from django.core.mail import send_mail
 from django.conf import settings
@@ -14,50 +16,8 @@ from django.utils.decorators import method_decorator
 
 
 
-from .models import (
-    Class,
-    Student,
-    Teacher,
-    Parent,
-    Lesson,
-    Score,
-    Grade,
-    Book,
-    BookPurchase,
-    BookSale,
-    Checkout,
-    Attendance,
-    Applicant,
-    EntranceExamQuestion, 
-    EntranceExamScore,
-    Course,
-    Module,
-    Assignment,
-    Exam,
-    ClassSchedule
-)
-from .serializers import (
-    ClassSerializer,
-    StudentSerializer,
-    TeacherSerializer,
-    ParentSerializer,
-    LessonSerializer,
-    ScoreSerializer,
-    GradeSerializer,
-    BookSerializer,
-    BookPurchaseSerializer,
-    BookSaleSerializer,
-    CheckoutSerializer,
-    AttendanceSerializer,
-    ApplicantSerializer,
-    EntranceExamQuestionSerializer,
-    EntranceExamScoreSerializer,
-    CourseSerializer,
-    Moduleserializer,
-    AssignmentSerializer,
-    ExamSerializer,
-    ClassScheduleSerializer
-)
+from .models import *
+from .serializers import *
 
 
 class ClassCourseList(generics.ListAPIView):
@@ -123,7 +83,6 @@ class ApplicantList(generics.ListCreateAPIView):
             return HttpResponseBadRequest(response_message)
 
         applicant = serializer.save()
-        print(applicant)
         # Send email notification after saving the applicant
         self.send_email(applicant)
 
@@ -141,6 +100,14 @@ class ApplicantDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Applicant.objects.all()
     serializer_class = ApplicantSerializer
 
+class StudyGroupList(generics.ListCreateAPIView):
+    """
+        This view
+            creates a new study group
+            lists all study groups
+    """
+    queryset = StudyGroup.objects.all()
+    serializer_class = StudyGroupSerializer
 
 # Class Views
 # @method_decorator(csrf_exempt, name='dispatch')
@@ -171,7 +138,7 @@ class ClassList(generics.ListCreateAPIView):
             elif data_type == 'lessons':
                 return LessonSerializer
             elif data_type == 'assignments':
-                return AssignmentSerializer
+                return UnitTestSerializer
             elif data_type == 'exams':
                 return ExamSerializer
             elif data_type == 'clas-schedules':
@@ -202,11 +169,11 @@ class ClassList(generics.ListCreateAPIView):
                 module = course.modules.get(pk=module_id)
                 lessons = module.lessons.all()
                 return lessons
-            elif data_type == 'assignments':
+            elif data_type == 'tests':
             # Get all lessons across all courses and modules for the class
-                lessons = Lesson.objects.filter(module__course___class=class_id)
+                # lessons = Lesson.objects.filter(module__course___class=class_id)
             # Get all assignments related to those lessons
-                return Assignment.objects.filter(lesson__in=lessons)
+                return UnitTest.objects.filter(module__course___class=class_id)
             elif data_type == 'exams':
                 exams = Exam.objects.filter(course___class=class_id)
                 return exams
@@ -223,23 +190,95 @@ class ClassDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Class.objects.all()
     serializer_class = ClassSerializer
 
-
 # Student Views
 class StudentList(generics.ListCreateAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+
+class StudentInfoList(generics.ListAPIView):
+    """
+        This view
+            creates a new student
+            lists all of the scores obtained by a student
+            lists all groups related to a student
+    """
 
     def get_serializer_class(self):
-        student_id = self.kwargs.get('student_id')
-        if student_id:
+        data_type = self.kwargs.get('data_type')
+
+        if data_type == 'scores':
             return ScoreSerializer
         else:
-            return StudentSerializer
+            return StudyGroupSerializer
     
     def get_queryset(self):
         student_id = self.kwargs.get('student_id')
-        if student_id:
+        data_type = self.kwargs.get('data_type')
+        status = self.request.GET.get('status')
+
+        if data_type == 'scores':
             return Score.objects.filter(student=student_id)
+        elif data_type == 'groups':
+            student = get_object_or_404(Student, pk=student_id)
+
+            if status == 'member':
+                # student = get_object_or_404(Student, pk=student_id)
+                return student.study_groups.all()
+            elif status == 'non-member':
+                # Groups created by other students in the same class
+                    class_members = student._class.students.exclude(id=student.id)
+                    other_classmate_groups = StudyGroup.objects.filter(
+                        creator__in=class_members
+                    ).exclude(
+                        Q(students=student) | Q(creator=student)
+                    )
+
+                    return other_classmate_groups
+
         else:
             return Student.objects.all()
+
+class StudyGroupInfoList(generics.ListAPIView):
+    """
+        This view
+            lists all members of a group
+            lists all messages of a group
+    """
+
+    def get_serializer_class(self):
+        data_type = self.kwargs.get('data_type')
+
+        if data_type == 'messages':
+            return MessageSerializer
+        elif data_type == 'members':
+            return StudentSerializer
+
+    def get_queryset(self):
+        data_type = self.kwargs.get('data_type')
+        group_id = self.kwargs.get('group_id')
+        group = get_object_or_404(StudyGroup, pk=group_id)
+
+        if data_type == 'messages':
+            return group.messages.all()
+        elif data_type == 'members':
+            return group.students.all()
+
+class StudyGroupDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = StudyGroup.objects.all()
+    serializer_class = StudyGroupSerializer
+    """
+        This view 
+            adds a new member to a group
+    """
+
+    def perform_update(self, serializer):
+        student_id = self.kwargs['student_id']
+        group_id = self.kwargs['pk']
+        group = get_object_or_404(StudyGroup, pk=group_id)
+        student = get_object_or_404(Student, pk=student_id)
+        group.students.add(student)
+
+        serializer.save()
 
 
 class StudentDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -491,6 +530,8 @@ class CourseDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer 
 
+
+
 class ModuleList(generics.ListCreateAPIView):
     queryset = Module.objects.all()
     serializer_class = Moduleserializer
@@ -498,3 +539,50 @@ class ModuleList(generics.ListCreateAPIView):
 class ModuleDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Module.objects.all()
     serializer_class = Moduleserializer
+
+class PaymentList(generics.ListCreateAPIView):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+
+    def get_queryset(self):
+        class_id = self.kwargs.get('class_id')
+        type = self.kwargs.get('type')
+        queryset = Payment.objects.filter(_class=class_id, type=type)
+
+        return queryset
+    
+class StudentPaymentList(generics.ListCreateAPIView):
+    queryset = StudentPayment.objects.all()
+    serializer_class = StudentPaymentSerializer
+
+    def get_queryset(self):
+        class_id = self.kwargs.get('class_id')
+        type = self.kwargs.get('type')
+
+        _class = get_object_or_404(Class, pk=class_id)
+        
+        student_payments = StudentPayment.objects.filter(
+            student__in=Student.objects.filter(_class__payments__type=type, _class=class_id)
+        )
+
+        return student_payments
+    
+class StudentPaymentDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = StudentPayment.objects.all()
+    serializer_class = StudentPaymentSerializer
+
+    def get_serializer_context(self):
+        index = self.request.GET.get('index')
+        context = super().get_serializer_context()
+        context['action'] = self.kwargs['action']
+        context['amount'] = self.request.data.get('amount')
+        if index:
+            context['index'] = int(index)
+        return context
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
