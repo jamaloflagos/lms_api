@@ -217,7 +217,7 @@ class StudentPayment(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='payments')
     balance = models.FloatField()
     paid = models.FloatField()
-    history = models.JSONField(default=dict)
+    history = models.JSONField(default=list)
 
 class Payment(models.Model):
     type = models.CharField(max_length=64)

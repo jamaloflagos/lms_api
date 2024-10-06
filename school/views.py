@@ -563,16 +563,25 @@ class StudentPaymentList(generics.ListCreateAPIView):
     """
     queryset = StudentPayment.objects.all()
     serializer_class = StudentPaymentSerializer
+    http_method_names = ['get', 'put', 'patch', 'delete']
 
     def get_queryset(self):
         class_id = self.kwargs.get('class_id')
         type = self.kwargs.get('type')
+        print(type)
 
-        # _class = get_object_or_404(Class, pk=class_id)
+        _class = get_object_or_404(Class, pk=class_id)
         
-        student_payments = StudentPayment.objects.filter(
-            student__in=Student.objects.filter(_class__payments__type=type, _class=class_id)
+
+        students = Student.objects.filter(
+            _class=_class,  # Ensure the student is in the specified class
+            _class__payments__type=type  # Ensure the student has a payment of the specified type
         )
+
+        # Now filter StudentPayment for those students
+        student_payments = StudentPayment.objects.filter(
+            student__in=students
+        ).distinct('student')
 
         return student_payments
     

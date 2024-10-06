@@ -293,18 +293,26 @@ class Moduleserializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
+    classes = serializers.JSONField(write_only=True)
     class Meta:
         model = Payment
         fields = "__all__"
+        read_only_fields = ['_class']
 
     def create(self, validated_data):
-        payment = Payment.objects.create(**validated_data)
-        _class = Class.objects.get(pk=payment._class.id)
-        students = _class.students.all()
-        for student in students:
-            StudentPayment.objects.create(
-                student=student, balance=payment.amount, paid=0.0
-            )
+        classes = validated_data.get('classes')
+        type = validated_data.get('type')
+        amount = validated_data.get('amount')
+
+        for _class in list(classes):
+            _class = Class.objects.get(pk=_class)
+            payment = Payment.objects.create(type=type, amount=amount, _class=_class)
+            students = Class.objects.get(pk=payment._class.id).students.all()
+            for student in students:
+                StudentPayment.objects.create(
+                    student=student, balance=payment.amount, paid=0.0
+                )
+        
         return payment
 
 class StudentPaymentSerializer(serializers.ModelSerializer):
@@ -319,7 +327,7 @@ class StudentPaymentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         action = self.context.get('action')
         index = self.context.get('index')
-        amount_paid = self.context.get('amount')
+        amount_paid = float(self.context.get('amount'))
         if amount_paid is None:
             raise serializers.ValidationError("The amount field is required.")
         
@@ -344,7 +352,7 @@ class StudentPaymentSerializer(serializers.ModelSerializer):
         elif action == 'change':
             to_ch = current_history[index]
             old_amount = to_ch['amount']
-            
+
             if old_amount != amount_paid:
                 instance.balance += (old_amount - amount_paid)
                 instance.paid -= (old_amount - amount_paid)
