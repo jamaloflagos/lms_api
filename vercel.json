@@ -1,6 +1,5 @@
 {
     "version": 2,
-    "runtime": "python3.8",
     "builds": [
       { "src": "manage.py", "use": "@vercel/python" },
       { "src": "api/wsgi.py", "use": "@vercel/python" }
