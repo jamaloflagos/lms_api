@@ -573,15 +573,10 @@ class StudentPaymentList(generics.ListCreateAPIView):
         _class = get_object_or_404(Class, pk=class_id)
         
 
-        students = Student.objects.filter(
-            _class=_class,  # Ensure the student is in the specified class
-            _class__payments__type=type  # Ensure the student has a payment of the specified type
-        )
+        students = Student.objects.filter(_class=c, _class__payments__type='Tuition fee')
 
         # Now filter StudentPayment for those students
-        student_payments = StudentPayment.objects.filter(
-            student__in=students
-        ).distinct('student')
+        student_payments = StudentPayment.objects.filter(student__in=s)
 
         return student_payments
     

@@ -79,6 +79,9 @@ class Student(models.Model):
     class Meta:
         db_table = "student"
 
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}'s email: {self.email}"
+
 class Course(models.Model):
     OPEN = 'O'
     WAITLISTED = 'W'
@@ -219,6 +222,9 @@ class StudentPayment(models.Model):
     paid = models.FloatField()
     history = models.JSONField(default=list)
 
+    def __str__(self):
+        return f"student id: {self.student} and balance : {self.balance}"
+
 class Payment(models.Model):
     type = models.CharField(max_length=64)
     amount = models.IntegerField()
@@ -226,6 +232,8 @@ class Payment(models.Model):
 
     class Meta:
         unique_together = ['type', '_class']
+
+
 
 # class TeacherToken(models.Model):
 #     key = models.CharField("Key", max_length=40, primary_key=True)

@@ -27,7 +27,7 @@ SECRET_KEY = "django-insecure-*0z0b3^6(^f1wo3ilsqh1ztrqs12f*3=8o79q0$3gfcf%vrwzb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["*"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -104,11 +104,16 @@ CHANNEL_LAYERS = {
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'lms',
+        'USER': 'postgres',
+        'PASSWORD': 'oyinkan1',
+        'HOST': 'localhost',  # or your database host
+        'PORT': '5432',
     }
 }
+
 
 STORAGES = {
     "default": {
