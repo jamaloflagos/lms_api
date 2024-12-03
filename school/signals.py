@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import EntranceExamScore, Student, Parent, Teacher, Applicant
+from .models import *
 
 
 @receiver(post_save, sender=EntranceExamScore)
@@ -62,7 +62,7 @@ def handle_score_save(sender, instance, created, **kwargs):
     else:
         # Send encouraging email if percentage is less than 50
         send_email(
-            subject='Keep Trying – Your Entrance Exam Score',
+            subject='Keep Trying - Your Entrance Exam Score',
             message=f'''
             Dear {applicant.first_name},
 
