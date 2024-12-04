@@ -12,10 +12,12 @@ class StudentList(generics.ListCreateAPIView):
 class StudentInfoList(generics.ListAPIView):
     """
     This view
-        creates a new student
         lists all of the scores obtained by a student
         lists all groups related to a student
     """
+    view_permissions = {
+        'get': {'teacher': True, 'student': True}
+    }
 
     def get_serializer_class(self):
         data_type = self.kwargs.get("data_type")
@@ -53,4 +55,6 @@ class StudentInfoList(generics.ListAPIView):
 class StudentDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-
+    view_permissions = {
+        'get': {'teacher': True, 'student': True}
+    }

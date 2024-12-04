@@ -5,6 +5,9 @@ from school.serializers import EntranceExamQuestionSerializer, EntranceExamScore
 class EntranceExamQuestionList(generics.ListCreateAPIView):
     queryset = EntranceExamQuestion.objects.all()
     serializer_class = EntranceExamQuestionSerializer
+    view_permissions = {
+        'get': {'applicant': True} 
+    }
 
 
 class EntranceExamScoreList(generics.ListCreateAPIView):

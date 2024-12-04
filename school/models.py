@@ -10,6 +10,7 @@ class User(AbstractUser):
         ('admin', 'Admin'),
         ('teacher', 'Teacher'),
         ('student', 'Student'),
+        ('applicant', 'Applicant')
     )
     role = models.CharField(max_length=20, choices=USER_ROLES)
 
@@ -124,7 +125,6 @@ class Lesson(models.Model):
 
     def __str__(self):
         return f"{self.id}"
-
     
 class UnitTest(models.Model):
     module = models.OneToOneField(Module, on_delete=models.CASCADE, related_name="tests")
@@ -145,7 +145,6 @@ class Exam(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     obtainable_score = models.IntegerField()
-
 
 class ClassSchedule(models.Model):
     start_time = models.TimeField()
@@ -224,7 +223,6 @@ class Message(models.Model):
     content = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
 
-
 class StudentPayment(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='payments')
     balance = models.FloatField()
@@ -241,8 +239,6 @@ class Payment(models.Model):
 
     class Meta:
         unique_together = ['type', '_class']
-
-
 
 # class TeacherToken(models.Model):
 #     key = models.CharField("Key", max_length=40, primary_key=True)

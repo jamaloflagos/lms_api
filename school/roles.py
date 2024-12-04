@@ -10,11 +10,15 @@ def is_student(request, view):
 def is_teacher(request, view):
     return is_user(request, view) and request.user.role == 'teacher'
 
+def is_applicant(request, view):
+    return is_user(request, view) and request.user.role == 'applicant'
+
 
 ROLES = {
     'user': is_user,
     'anon': is_anon,
     'admin': is_admin,
+    'applicant': is_applicant,
     'student': is_student,
     'teacher': is_teacher,
 }

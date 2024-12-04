@@ -9,28 +9,28 @@ from school.serializers import (
     )
 
 
-class ClassCourseList(generics.ListAPIView):
-    queryset = Class.objects.all()
-    serializer_class = ClassSerializer
+# class ClassCourseList(generics.ListAPIView):
+#     queryset = Class.objects.all()
+#     serializer_class = ClassSerializer
 
-    def get_queryset(self):
-        class_id = self.request.query_params.get("class_id")
-        _class = Class.objects.get(id=class_id)
-        queryset = _class.courses.all()
+#     def get_queryset(self):
+#         class_id = self.request.query_params.get("class_id")
+#         _class = Class.objects.get(id=class_id)
+#         queryset = _class.courses.all()
 
-        return queryset
+#         return queryset
 
 
-class ClassStudentList(generics.ListAPIView):
-    queryset = Class.objects.all()
-    serializer_class = ClassSerializer
+# class ClassStudentList(generics.ListAPIView):
+#     queryset = Class.objects.all()
+#     serializer_class = ClassSerializer
 
-    def get_queryset(self):
-        class_id = self.request.query_params.get("class_id")
-        _class = Class.objects.get(id=class_id)
-        queryset = _class.students.all()
+#     def get_queryset(self):
+#         class_id = self.request.query_params.get("class_id")
+#         _class = Class.objects.get(id=class_id)
+#         queryset = _class.students.all()
 
-        return queryset
+#         return queryset
 
 class ClassList(generics.ListCreateAPIView):
     """
@@ -44,6 +44,11 @@ class ClassList(generics.ListCreateAPIView):
       get all assignmnets of a class
       get all exams of a class
     """
+
+    viewpermissions = {
+        'post': {'admin': True},
+        'get': {'teacher': True, 'admin': True, 'student': True}
+    }
 
     def get_serializer_class(self):
 

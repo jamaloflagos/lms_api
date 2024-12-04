@@ -6,6 +6,10 @@ from school.serializers import AttendanceSerializer
 class AttendanceList(generics.ListCreateAPIView):
     queryset = Attendance.objects.all()
     serializer_class = AttendanceSerializer
+    view_permissions = {
+        'post': {'teacher': True},
+        'get': {'teacher': True, 'student': True, 'admin': True}
+    }
 
     def perform_create(self, serializer):
         student_id = serializer.validated_data.get("student")
@@ -35,4 +39,8 @@ class AttendanceList(generics.ListCreateAPIView):
 class AttendanceDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Attendance.objects.all()
     serializer_class = AttendanceSerializer
+    view_permissions = {
+        'put,delete': {'teacher': True},
+        'get': {'teacher': True, 'admin': True}
+    }
 

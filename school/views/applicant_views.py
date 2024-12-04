@@ -1,18 +1,23 @@
+import random, string
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
 from django.http import HttpResponseBadRequest
 from school.models import Applicant
 from school.serializers import ApplicantSerializer
 
+User = get_user_model()
+
 class ApplicantList(generics.ListCreateAPIView):
     queryset = Applicant.objects.all()
     serializer_class = ApplicantSerializer
     view_permissions = {
-        'list': {'admin': True,},
-        'create': {'anon': True,},
+        'get': {'admin': True,},
+        'post': {'anon': True,},
     }
+    # permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         contact_mail = serializer.validated_data.get("contact_mail")
@@ -22,8 +27,9 @@ class ApplicantList(generics.ListCreateAPIView):
             response_message = {"contact_mail": "Email already exists"}
             return HttpResponseBadRequest(response_message)
 
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=15))
         applicant = serializer.save()
-        # Send email notification after saving the applicant
+        User.objects.create_user(username=applicant.contact_mail, password=password, role='applicant')
         self.send_email(applicant)
 
     def send_email(self, applicant):

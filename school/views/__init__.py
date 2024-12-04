@@ -4,7 +4,7 @@ from .auth_views import *
 from .book_views import *
 from .class_views import *
 from .course_views import *
-from .entrance_exan_views import *
+from .entrance_exam_views import *
 from .grade_views import *
 from .lesson_views import *
 from .module_views import *
