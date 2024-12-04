@@ -1,10 +1,13 @@
 import random
 import string
 from django.db.models.signals import post_save
+from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import *
+
+User = get_user_model()
 
 
 @receiver(post_save, sender=EntranceExamScore)
@@ -36,8 +39,9 @@ def handle_score_save(sender, instance, created, **kwargs):
             _class=applicant.class_applied_for,
             parent=parent,
             email = applicant.contact_mail,
-            password = password
         )
+
+        User.objects.create_user(username=applicant.contact_mail, password=password, role='student')
 
         # Send congratulatory email
         send_email(

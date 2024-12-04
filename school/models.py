@@ -1,9 +1,18 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from rest_framework.authtoken.models import Token as DefaultToken
 import shortuuid
 
 
 # Create your models here. 
+
+class User(AbstractUser):
+    USER_ROLES = (
+        ('admin', 'Admin'),
+        ('teacher', 'Teacher'),
+        ('student', 'Student'),
+    )
+    role = models.CharField(max_length=20, choices=USER_ROLES)
+
 class Class(models.Model):
     name = models.CharField(max_length=24)
     nick_name = models.CharField(max_length=24)

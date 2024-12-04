@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     "channels",
     "corsheaders",
     "rest_framework",
-    # 'rest_framework.authtoken',
+    "rest_framework_roles",
+    "rest_framework.authtoken",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -55,14 +56,20 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 ]
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.SessionAuthentication',
-#     ],
-#     'DEFAULT_PERMISSION_CLASSES': [
-#         'rest_framework.permissions.IsAuthenticated',
-#     ]
-# }
+AUTH_USER_MODEL = 'school.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ]
+}
+
+REST_FRAMEWORK_ROLES = {
+  'ROLES': 'school.roles.ROLES',
+}
 
 MIDDLEWARE = [
     "school.middleware.LogRequestMiddleware",

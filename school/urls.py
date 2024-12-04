@@ -1,9 +1,11 @@
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.urls import path
 from .views import *
 
-# api endpoints
 
 urlpatterns = [
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('std_payment/<int:class_id>/<str:type>', StudentPaymentList.as_view(), name='std_payment'),
     path('std-payment/<int:pk>/<str:action>', StudentPaymentDetail.as_view(), name='std_payment'),
     path('payment/', PaymentList.as_view(), name='payment'),

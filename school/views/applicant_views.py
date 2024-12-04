@@ -1,4 +1,5 @@
 from rest_framework import generics
+from rest_framework.permissions import AllowAny
 from django.core.mail import send_mail
 from django.conf import settings
 from django.http import HttpResponseBadRequest
@@ -8,6 +9,10 @@ from school.serializers import ApplicantSerializer
 class ApplicantList(generics.ListCreateAPIView):
     queryset = Applicant.objects.all()
     serializer_class = ApplicantSerializer
+    view_permissions = {
+        'list': {'admin': True,},
+        'create': {'anon': True,},
+    }
 
     def perform_create(self, serializer):
         contact_mail = serializer.validated_data.get("contact_mail")
@@ -35,3 +40,4 @@ class ApplicantList(generics.ListCreateAPIView):
 class ApplicantDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Applicant.objects.all()
     serializer_class = ApplicantSerializer
+    permission_classes = [AllowAny]
