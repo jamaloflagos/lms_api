@@ -41,7 +41,7 @@ def handle_score_save(sender, instance, created, **kwargs):
             email = applicant.contact_mail,
         )
 
-        User.objects.create_user(username=applicant.contact_mail, password=password, role='student')
+        User.objects.create_user(email=applicant.contact_mail, username=f"{applicant.first_name} {applicant.last_name}", password=password, role='Student')
 
         # Send congratulatory email
         send_email(

@@ -107,6 +107,8 @@ class ApplicantSerializer(serializers.ModelSerializer):
         model = Applicant
         fields = "__all__"
 
+    def create(self, validated_data):
+        print(validated_data)
 
 class ClassSerializer(serializers.ModelSerializer):
     # form_teacher_details = serializers.SerializerMethodField()
@@ -125,18 +127,19 @@ class ClassSerializer(serializers.ModelSerializer):
 
 
 class TeacherSerializer(serializers.ModelSerializer):
-    _class = serializers.PrimaryKeyRelatedField(
-        queryset=Class.objects.all(), write_only=True
+    form_class = serializers.PrimaryKeyRelatedField(
+        queryset=Class.objects.all(), write_only=True, required=False
     )
     form_class_details = serializers.SerializerMethodField()
-    # password = serializers.CharField(write_only=True)
 
     class Meta:
         model = Teacher
         fields = "__all__"
 
     def get_form_class_details(self, obj):
-        return {"id": obj._class.id, "name": obj._class.name}
+            if obj.form_class:
+                return {"id": obj.form_class.id, "name": obj.form_class.name}
+            return None
 
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -370,3 +373,8 @@ class StudentPaymentSerializer(serializers.ModelSerializer):
             instance.save()
 
         return instance
+
+class BookPurchaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookPurchase
+        field = 'field'

@@ -7,32 +7,41 @@ import shortuuid
 
 class User(AbstractUser):
     USER_ROLES = (
-        ('admin', 'Admin'),
-        ('teacher', 'Teacher'),
-        ('student', 'Student'),
-        ('applicant', 'Applicant')
+        ('Admin', 'Admin'),
+        ('Teacher', 'Teacher'),
+        ('Student', 'Student'),
+        ('Applicant', 'Applicant')
     )
-    role = models.CharField(max_length=20, choices=USER_ROLES)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'role']
+
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=50, blank=True, null=True)
+    role = models.CharField(max_length=10, choices=USER_ROLES)
 
 class Class(models.Model):
+    CATEGORY_CHOICES = [
+        ('Secondary', 'Secondary'),
+        ('Primary', 'Primary')
+    ]
     name = models.CharField(max_length=24)
     nick_name = models.CharField(max_length=24)
-    category = models.CharField(max_length=24)
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
+    subjects = models.JSONField(default=dict)
 
     class Meta:
         db_table = "class"
 
-    def __str__(self):
-        return self.name
+    def __str__(self, obj):
+        return f"{obj.name} id: {obj.id}"
     
 class Teacher(models.Model):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     subjects = models.JSONField(blank=True, default=list)
     is_form_teacher = models.BooleanField(default=False)
-    _class = models.OneToOneField(Class, null=True, on_delete=models.SET_NULL, related_name="form_teacher")
+    form_class = models.OneToOneField(Class, null=True, on_delete=models.SET_NULL, related_name="form_teacher")
     email = models.EmailField(default=None, unique=True)
-    password = models.CharField(max_length=64, default=None, null=True)
 
     class Meta:
         db_table = "teacher"
@@ -65,8 +74,8 @@ class Applicant(models.Model):
     parent_contact_phone = models.CharField(max_length=24)
     class_applied_for = models.ForeignKey(Class, on_delete=models.CASCADE, null=True, related_name="applicants")
 
-    def __str__(self):
-        return f"class: {self.class_applied_for}"
+    # def __str__(self):
+    #     return f"class: {self.class_applied_for}"
 
 class EntranceExamQuestion(models.Model):
     question = models.TextField()
@@ -93,8 +102,8 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name}'s email: {self.email}"
 
 class Course(models.Model):
-    OPEN = 'O'
-    WAITLISTED = 'W'
+    OPEN = 'Open'
+    WAITLISTED = 'Waitlisted'
     STATUS_CHOICES = [
         (OPEN, 'Open'),
         (WAITLISTED, 'Waitlisted')
@@ -104,8 +113,8 @@ class Course(models.Model):
     description = models.TextField()
     image = models.ImageField(upload_to='course_images/', null=True, blank=True)
     _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="courses")
-    creator = models.CharField(max_length=64)
-    course_status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=OPEN)
+    creator = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="courses")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=OPEN)
  
 class Module(models.Model):
     title = models.CharField(max_length=30)
@@ -116,8 +125,8 @@ class Lesson(models.Model):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="lessons", default=None, null=True)
     title = models.CharField(max_length=30)
     note = models.TextField()
-    has_unit_test =models.BooleanField(default=False)
-    unit_test = models.JSONField(default=list, blank=True)
+    has_assignment =models.BooleanField(default=False)
+    assignment_questions = models.JSONField(default=list, blank=True)
     has_video = models.BooleanField(default=False)
     video = models.TextField()
     date_created = models.DateField()
@@ -134,9 +143,6 @@ class UnitTest(models.Model):
     obtainable_mark = models.IntegerField()
     tota_obtainable_mark = models.IntegerField()
     questions = models.JSONField(default=list)
-
-    def __str__(self):
-        return f"{self.lesson} {self.status}"
 
 class Exam(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="exams")
@@ -169,6 +175,10 @@ class Grade(models.Model):
     value = models.IntegerField()
 
 class Attendance(models.Model):
+    STATUS_CHOICES = [
+        ('Absent', 'Absent'),
+        ('Present', 'Present')
+    ]
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="attendances")
     _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="attendances", default=None)
     date_marked = models.DateField()
@@ -178,10 +188,15 @@ class Attendance(models.Model):
         unique_together = ['student', 'date_marked']
 
 class Book(models.Model):
+    BOOK_LOCATION = [
+        ('library', 'Library'),
+        ('book_store', 'Book store')
+    ]
     title = models.CharField(max_length=30)
     author = models.CharField(max_length=64)
     copies = models.IntegerField()
-    location = models.CharField(max_length=10)
+    location = models.CharField(max_length=10, choices=BOOK_LOCATION)
+    is_available = models.BooleanField(default=True)
 
 class BookPurchase(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="purchases")
@@ -204,6 +219,7 @@ class Checkout(models.Model):
     date_checked_out = models.DateTimeField()
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="book_borrowed")
     days_requested = models.IntegerField()
+    returned = models.BooleanField(default=False)
 
 class StudyGroup(models.Model):
     name = models.CharField(max_length=255)
@@ -273,3 +289,51 @@ class Payment(models.Model):
 
 #     class Meta:
 #         abstract = False
+class Term(models.Model):
+    name = models.CharField(max_length=50) 
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+class Subject(models.Model):
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+class ClassSubject(models.Model):
+    _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='class_subjects')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='class_subjects')
+
+    class Meta:
+        unique_together = ['_class', 'subject']
+
+    def __str__(self):
+        return f"{self._class.name} - {self.subject.name}"
+
+class ClassSubjectTeacher(models.Model):
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='class_subject_teachers')
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='teachers')
+
+    class Meta:
+        unique_together = ['teacher', 'class_subject']
+
+    def __str__(self):
+        return f"{self.teacher.name} - {self.class_subject}"
+
+class ClassSubjectOutline(models.Model):
+    title = models.CharField(max_length=100)
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='outlines')
+    week = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = ['class_subject', 'week']
+
+    def __str__(self):
+        return f"Week {self.week}: {self.title} ({self.class_subject})"
+
+class ClassOutlineNote(models.Model):
+    outline = models.ForeignKey(ClassSubjectOutline, on_delete=models.CASCADE, related_name='notes')
+    note = models.TextField()
+
+    def __str__(self):
+        return f"Note for {self.outline}"

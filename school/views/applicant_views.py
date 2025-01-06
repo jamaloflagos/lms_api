@@ -17,10 +17,11 @@ class ApplicantList(generics.ListCreateAPIView):
         'get': {'admin': True,},
         'post': {'anon': True,},
     }
-    # permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         contact_mail = serializer.validated_data.get("contact_mail")
+        print(dict(self.request.data))
+        # print(serializer.validated_data)
 
         # Check if there is an existing applicant with the same contact_mail or parent_contact_mail
         if Applicant.objects.filter(contact_mail=contact_mail).exists():
@@ -28,6 +29,7 @@ class ApplicantList(generics.ListCreateAPIView):
             return HttpResponseBadRequest(response_message)
 
         password = ''.join(random.choices(string.ascii_letters + string.digits, k=15))
+        print(password)
         applicant = serializer.save()
         User.objects.create_user(username=applicant.contact_mail, password=password, role='applicant')
         self.send_email(applicant)

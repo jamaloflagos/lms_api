@@ -1,35 +1,48 @@
-from rest_framework.views import APIView
-from rest_framework.parsers import JSONParser
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from django.http import Http404
-from school.models import Student, Teacher
-from school.serializers import StudentSerializer, TeacherSerializer
+from rest_framework import status
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-class LoginView(APIView):
-    permission_classes = [AllowAny]
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        
+        token['role'] = user.role
+        
+        return token
 
-    def post(self, request):
-        data = JSONParser().parse(request)
 
-        role = data.get("role")
-        email = data.get("email")
-        password = data.get("password")
 
-        if role == "student":
-            print(email, password)
-            try:
-                student = Student.objects.get(email=email, password=password)
-            except Student.DoesNotExist:
-                raise Http404
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
-            serializer = StudentSerializer(student)
-            return Response(serializer.data)
-        elif role == "teacher":
-            try:
-                teacher = Teacher.objects.get(email=email, password=password)
-            except Teacher.DoesNotExist:
-                raise Http404
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        refresh_token = response.data.get('refresh')
+        access_token = response.data.get('access')
 
-            serializer = TeacherSerializer(teacher)
-            return Response({"id": serializer.data["id"]})
+        if refresh_token:
+            response.set_cookie(
+                key='refresh_token',
+                value=refresh_token,
+                httponly=True,
+                secure=True,  # Set to False if you're testing locally
+                samesite='Lax',  # Can be 'Strict' or 'None' depending on your requirements
+                max_age=7 * 24 * 60 * 60,  # 7 days
+            )
+            del response.data['refresh']  # Remove refresh token from response body
+        
+        return response
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({"error": "Refresh token is missing."}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.data['refresh'] = refresh_token
+        response = super().post(request, *args, **kwargs)
+        
+        return response
