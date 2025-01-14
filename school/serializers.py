@@ -16,6 +16,135 @@ class StudentSerializer(serializers.ModelSerializer):
     def get_class_details(self, obj):
         return {"id": obj._class.id, "name": obj._class.name}
 
+class EntranceExamQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EntranceExamQuestion
+        fields = "__all__"
+
+class EntranceExamScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EntranceExamScore
+        fields = "__all__"
+
+class ApplicantSerializer(serializers.ModelSerializer):
+    class_applied_for = serializers.PrimaryKeyRelatedField(queryset=Class.objects.all())
+
+    class Meta:
+        model = Applicant
+        fields = "__all__"
+
+class ClassSerializer(serializers.ModelSerializer):
+    # form_teacher_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Class
+        fields = "__all__"
+
+    # def get_form_teacher_details(self, obj):
+    #     try:
+    #         return {
+    #             "name": f"{obj.form_teacher.first_name} {obj.form_teacher.last_name}"
+    #         }
+    #     except Class.form_teacher.RelatedObjectDoesNotExist:
+    #         return {"name": "No form teacher assigned"}
+
+class TeacherSerializer(serializers.ModelSerializer):
+    form_class = serializers.PrimaryKeyRelatedField(
+        queryset=Class.objects.all(), write_only=True, required=False
+    )
+    form_class_details = serializers.SerializerMethodField()
+    subjects = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Teacher
+        fields = "__all__"
+
+    def get_form_class_details(self, obj):
+            if obj.form_class:
+                return {"id": obj.form_class.id, "name": obj.form_class.name}
+            return None
+    
+    def get_subjects(self, obj):
+            # Fetch all ClassSubjectTeacher entries for this teacher
+            class_subject_teachers = obj.class_subject_teachers.select_related('class_subject', 'class_subject__subject', 'class_subject___class')
+            
+            subjects_dict = {}
+            for entry in class_subject_teachers:
+                subject_name = entry.class_subject.subject.name
+                class_name = entry.class_subject._class.name
+
+                if subject_name not in subjects_dict:
+                    subjects_dict[subject_name] = {
+                        "name": subject_name,
+                        "classes": []
+                    }
+                
+                subjects_dict[subject_name]["classes"].append(class_name)
+
+            return list(subjects_dict.values())
+
+class SubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = '__all__'
+
+class ClassSubjectSerializer(serializers.ModelSerializer):
+    class_id = serializers.IntegerField(source='_class.id')  
+    class_name = serializers.CharField(source='_class.name')  
+    subject_id = serializers.IntegerField(source='subject.id')  
+    subject_name = serializers.CharField(source='subject.name') 
+
+    class Meta:
+        model = ClassSubject
+        fields = ['class_id', 'class_name', 'subject_id', 'subject_name']
+
+class OutlineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Outline
+        fields = ['title', 'week']
+
+class NoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Note
+        fields = '__all__'
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = '__all__'
+        exclude = ['class_subject']
+
+class TestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = '__all__'
+        exclude = ['class_subject']
+        
+class ExamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = '__all__'
+        exclude = ['class_subject']
+
+class ScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Score
+        fields = '__all__'
+
+class ScoreSheetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScoreSheet
+        fields = '__all__'
+        read_only_field = ['__all__']
+
+class ReportCardSerializer(serializers.ModelSerializer):
+    teacher_comment = serializers.CharField(required=False)
+    principal_comment = serializers.CharField(required=False)
+    
+    class Meta:
+        model = ReportCard
+        fields = '__all__'
+        read_only_field = ['__all__']
 
 class StudyGroupSerializer(serializers.ModelSerializer):
     creator_details = serializers.SerializerMethodField()
@@ -40,7 +169,6 @@ class StudyGroupSerializer(serializers.ModelSerializer):
             "name": f"{obj.creator.first_name} {obj.creator.last_name}",
         }
 
-
 class MessageSerializer(serializers.ModelSerializer):
     sender_details = serializers.SerializerMethodField()
 
@@ -54,18 +182,6 @@ class MessageSerializer(serializers.ModelSerializer):
             "name": f"{obj.sender.first_name} {obj.sender.last_name}",
         }
 
-
-class ExamSerializer(serializers.ModelSerializer):
-    course = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Exam
-        fields = "__all__"
-
-    def get_course(self, obj):
-        return f"{obj.course.title}"
-
-
 class ClassScheduleSerializer(serializers.ModelSerializer):
     course = serializers.SerializerMethodField()
 
@@ -76,77 +192,10 @@ class ClassScheduleSerializer(serializers.ModelSerializer):
     def get_course(self, obj):
         return f"{obj.course.title}"
 
-
-class UnitTestSerializer(serializers.ModelSerializer):
-    course = serializers.SerializerMethodField()
-
-    class Meta:
-        model = UnitTest
-        fields = "__all__"
-
-    def get_course(self, obj):
-        return f"{obj.lesson.module.course.title}"
-
-
-class EntranceExamQuestionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EntranceExamQuestion
-        fields = "__all__"
-
-
-class EntranceExamScoreSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EntranceExamScore
-        fields = "__all__"
-
-
-class ApplicantSerializer(serializers.ModelSerializer):
-    class_applied_for = serializers.PrimaryKeyRelatedField(queryset=Class.objects.all())
-
-    class Meta:
-        model = Applicant
-        fields = "__all__"
-
-    def create(self, validated_data):
-        print(validated_data)
-
-class ClassSerializer(serializers.ModelSerializer):
-    # form_teacher_details = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Class
-        fields = "__all__"
-
-    # def get_form_teacher_details(self, obj):
-    #     try:
-    #         return {
-    #             "name": f"{obj.form_teacher.first_name} {obj.form_teacher.last_name}"
-    #         }
-    #     except Class.form_teacher.RelatedObjectDoesNotExist:
-    #         return {"name": "No form teacher assigned"}
-
-
-class TeacherSerializer(serializers.ModelSerializer):
-    form_class = serializers.PrimaryKeyRelatedField(
-        queryset=Class.objects.all(), write_only=True, required=False
-    )
-    form_class_details = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Teacher
-        fields = "__all__"
-
-    def get_form_class_details(self, obj):
-            if obj.form_class:
-                return {"id": obj.form_class.id, "name": obj.form_class.name}
-            return None
-
-
 class ParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = "__all__"
-
+        fields = '__all__'
 
 class LessonSerializer(serializers.ModelSerializer):
     # _class = serializers.CharField(write_only=True)
@@ -154,48 +203,13 @@ class LessonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lesson
-        fields = "__all__"
+        fields = '__all__'
 
     # def get_class_details(self, obj):
     #     return {
     #         "id": obj._class.id,
     #         "name": obj._class.name
     #     }
-
-
-class ScoreSerializer(serializers.ModelSerializer):
-    lesson = serializers.PrimaryKeyRelatedField(
-        queryset=Lesson.objects.all(), write_only=True
-    )
-    lesson_topic = serializers.CharField(source="lesson.topic", read_only=True)
-    student = serializers.PrimaryKeyRelatedField(
-        queryset=Student.objects.all(), write_only=True
-    )
-    student_details = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Score
-        fields = "__all__"
-        read_only_fields = ["total_obtainable_mark"]
-
-    def get_student_details(self, obj):
-        return {"name": f"{obj.student.first_name} {obj.student.last_name}"}
-
-    def create(self, validated_data):
-        return Score.objects.create(tota_obtainable_mark=sum("obtainable_mark"))
-
-
-class GradeSerializer(serializers.ModelSerializer):
-    subject = serializers.CharField(source="subject.name", read_only=True)
-    student = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Grade
-        fields = ["subject", "student", "value"]
-
-    def get_student(self, obj):
-        return f"{obj.student.first_name} {obj.student.last_name}"
-
 
 class AttendanceSerializer(serializers.ModelSerializer):
     student = serializers.PrimaryKeyRelatedField(
@@ -222,12 +236,10 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "name": f"{obj.student.first_name} {obj.student.last_name}",
         }
 
-
 class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ["title", "author", "copies", "location"]
-
 
 class BookPurchaseSerializer(serializers.ModelSerializer):
     book = serializers.CharField(source="book.title", read_only=True)
@@ -243,7 +255,6 @@ class BookPurchaseSerializer(serializers.ModelSerializer):
             "supplier",
         ]
 
-
 class BookSaleSerializer(serializers.ModelSerializer):
     book = serializers.CharField(source="book.title", read_only=True)
 
@@ -258,7 +269,6 @@ class BookSaleSerializer(serializers.ModelSerializer):
             "student",
         ]
 
-
 class CheckoutSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
     book = serializers.CharField(source="book.title", read_only=True)
@@ -269,7 +279,6 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
     def get_student(self, obj):
         return f"{obj.student.first_name} {obj.student.last_name}"
-
 
 class CourseSerializer(serializers.ModelSerializer):
     modules_count = serializers.SerializerMethodField()
@@ -288,12 +297,10 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         return obj.get_course_status_display()  # Explicitly call the method
 
-
 class Moduleserializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = "__all__"
-
 
 class PaymentSerializer(serializers.ModelSerializer):
     classes = serializers.JSONField(write_only=True)

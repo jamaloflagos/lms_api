@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from decouple import config
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -73,6 +74,17 @@ REST_FRAMEWORK = {
 
 REST_FRAMEWORK_ROLES = {
   'ROLES': 'school.roles.ROLES',
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Token expires after 5 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Refresh token expires after 1 day
+    'ROTATE_REFRESH_TOKENS': True,  # Issue a new refresh token when using refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh token after rotation
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Authentication header type
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 MIDDLEWARE = [

@@ -4,7 +4,6 @@ from .book_views import *
 from .class_views import *
 from .course_views import *
 from .entrance_exam_views import *
-from .grade_views import *
 from .lesson_views import *
 from .module_views import *
 from .parent_views import *
@@ -13,7 +12,7 @@ from .score_views import *
 from .student_views import *
 from .study_group_views import *
 from .teacher_views import *
-from .test_views import *
 from .exam_views import *
 from .schedule_views import *
 from .auth_views import *
+from .subject_views import *

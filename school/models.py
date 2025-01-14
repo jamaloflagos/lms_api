@@ -25,20 +25,17 @@ class Class(models.Model):
         ('Primary', 'Primary')
     ]
     name = models.CharField(max_length=24)
-    nick_name = models.CharField(max_length=24)
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
-    subjects = models.JSONField(default=dict)
 
     class Meta:
         db_table = "class"
 
-    def __str__(self, obj):
-        return f"{obj.name} id: {obj.id}"
+    def __str__(self):
+        return f"{self.name} id: {self.id}"
     
 class Teacher(models.Model):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    subjects = models.JSONField(blank=True, default=list)
     is_form_teacher = models.BooleanField(default=False)
     form_class = models.OneToOneField(Class, null=True, on_delete=models.SET_NULL, related_name="form_teacher")
     email = models.EmailField(default=None, unique=True)
@@ -73,6 +70,7 @@ class Applicant(models.Model):
     parent_address = models.TextField()
     parent_contact_phone = models.CharField(max_length=24)
     class_applied_for = models.ForeignKey(Class, on_delete=models.CASCADE, null=True, related_name="applicants")
+    made_payment = models.BooleanField(default=False)
 
     # def __str__(self):
     #     return f"class: {self.class_applied_for}"
@@ -88,18 +86,147 @@ class EntranceExamScore(models.Model):
     percentage = models.SmallIntegerField()
 
 class Student(models.Model):
+    GENDER_CHOICES = [
+        ('Male', 'Male'),
+        ('Female', 'Female')
+    ]
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="students")
     parent = models.ForeignKey(Parent, on_delete=models.SET_NULL, null=True, related_name="children")
     email = models.EmailField(default=None, unique=True)
-    password = models.CharField(max_length=64, default=None)
+    gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default=None)
  
     class Meta:
         db_table = "student"
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}'s email: {self.email}"
+    
+class Term(models.Model):
+    name = models.CharField(max_length=50) 
+    start_date = models.DateField()
+    end_date = models.DateField()
+    year =models.IntegerField(default=None)
+
+class Subject(models.Model):
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.name} {self.id}"
+
+class ClassSubject(models.Model):
+    _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='class_subjects')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='class_subjects')
+
+    class Meta:
+        unique_together = ['_class', 'subject']
+
+    def __str__(self):
+        return f"{self._class.name} - {self.subject.name}"
+    
+class Assignment(models.Model):
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='assignments', default=None)
+    questions = models.JSONField(default=list)
+    date_posted = models.DateField(auto_now_add=True)
+    due_date = models.DateTimeField()
+    obtainable_mark = models.IntegerField()
+    
+class Test(models.Model):
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='tests', default=None)
+    questions = models.JSONField(default=list)
+    date_posted = models.DateField(auto_now_add=True)
+    due_date = models.DateTimeField()
+    obtainable_mark = models.IntegerField()
+
+class Exam(models.Model):
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='exams', default=None)
+    questions = models.JSONField(default=list)
+    date_posted = models.DateField(auto_now_add=True, null=True)
+    due_date = models.DateTimeField(default=None)
+    time_allowed = models.TimeField(default=None)
+    obtainable_mark = models.IntegerField()
+
+class Score(models.Model):
+    SCORE_TYPE_CHOICES = [
+        ('Assignment', 'Assignment'),
+        ('Test', 'Test'),
+        ('Exam', 'Exam'),
+    ]
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="scores", default=None)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="scores", default=None)
+    score_type = models.CharField(max_length=10, choices=SCORE_TYPE_CHOICES)
+    value = models.IntegerField()
+    date_posted = models.DateField(auto_now_add=True, null=True)
+
+class ScoreSheet(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='score_sheets')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='score_sheets')
+    assignment_score = models.IntegerField(default=0)
+    test_score = models.IntegerField(default=0)
+    exam_score = models.IntegerField(default=0)
+    total_score = models.IntegerField(default=0)
+    grade = models.CharField(max_length=10, default=None)
+
+    def calculate_total(self):
+        self.total_score = self.assignment_score + self.test_score + self.exam_score
+        if self.total_score >= 70:
+            self.grade = 'Excellencce'
+        elif self.total_score >= 60:
+            self.grade = 'Good'
+        elif self.total_score >= 40:
+            self.grade = 'Fair'
+        else:
+            self.grade = 'Poor'
+        self.save()
+
+class ReportCard(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='report_cards')
+    term = models.CharField(max_length=20)
+    year = models.IntegerField()
+    score_sheets = models.ManyToManyField(ScoreSheet, related_name='report_cards')
+    overall_total = models.IntegerField(default=0)
+    overall_average = models.FloatField(default=0.0)
+    teacher_comment = models.CharField(max_length=120, default=None)
+    principal_comment = models.CharField(max_length=120, default=None)
+
+    def calculate_overall(self):
+        total_scores = sum(sheet.total_score for sheet in self.score_sheets.all())
+        num_subjects = self.score_sheets.count()
+        self.overall_total = total_scores
+        self.overall_average = total_scores / num_subjects if num_subjects > 0 else 0
+        self.save()
+
+class ClassSubjectTeacher(models.Model):
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='class_subject_teachers')
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='teachers')
+
+    class Meta:
+        unique_together = ['teacher', 'class_subject']
+
+    def __str__(self):
+        return f'{self.teacher.name} - {self.class_subject}'
+
+class Outline(models.Model):
+    title = models.CharField(max_length=100)
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='outlines')
+    week = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = ['class_subject', 'week']
+
+    def __str__(self):
+        return f'Week {self.week}: {self.title} ({self.class_subject})'
+
+class Note(models.Model):
+    outline = models.ForeignKey(Outline, on_delete=models.CASCADE, related_name='notes')
+    title = models.CharField(max_length=20)
+    content = models.TextField()
+
+    def __str__(self):
+        return f'Note for {self.outline}'
+
+
 
 class Course(models.Model):
     OPEN = 'Open'
@@ -135,23 +262,6 @@ class Lesson(models.Model):
     def __str__(self):
         return f"{self.id}"
     
-class UnitTest(models.Model):
-    module = models.OneToOneField(Module, on_delete=models.CASCADE, related_name="tests")
-    status = models.CharField(max_length=30)
-    due_date = models.DateField()
-    due_time = models.TimeField()
-    obtainable_mark = models.IntegerField()
-    tota_obtainable_mark = models.IntegerField()
-    questions = models.JSONField(default=list)
-
-class Exam(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="exams")
-    date = models.DateField()
-    category = models.CharField(max_length=20)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    obtainable_score = models.IntegerField()
-
 class ClassSchedule(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -159,20 +269,6 @@ class ClassSchedule(models.Model):
     topic = models.CharField(max_length=64)
     tutor = models.CharField(max_length=64)
     lesson = models.CharField(max_length=30, default=None)
-
-class Score(models.Model): 
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="scores", default=None)
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='exam_scores', null=True)
-    assignment = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignment_scores', null=True)
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='test_scores', null=True)
-    value = models.IntegerField()
-    date_submitted = models.DateField()
-    score_type = models.CharField(max_length=10)
-
-class Grade(models.Model):
-    subject = models.CharField(max_length=64)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="grades")
-    value = models.IntegerField()
 
 class Attendance(models.Model):
     STATUS_CHOICES = [
@@ -256,84 +352,3 @@ class Payment(models.Model):
     class Meta:
         unique_together = ['type', '_class']
 
-# class TeacherToken(models.Model):
-#     key = models.CharField("Key", max_length=40, primary_key=True)
-#     user = models.OneToOneField(
-#         'Teacher',
-#         related_name='auth_token',
-#         on_delete=models.CASCADE,
-#     )
-#     created = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         verbose_name = "Teacher Token"
-#         verbose_name_plural = "Teacher Tokens"
-
-#     def save(self, *args, **kwargs):
-#         if not self.key:
-#             self.key = self.generate_key()
-#         return super().save(*args, **kwargs)
-
-#     def generate_key(self):
-#         return binascii.hexlify(os.urandom(20)).decode()
-
-#     def __str__(self):
-#         return self.key
-
-# class StudentToken(DefaultToken):
-#     user = models.OneToOneField(
-#         'Teacher',
-#         related_name='auth_token',
-#         on_delete=models.CASCADE,
-#     )
-
-#     class Meta:
-#         abstract = False
-class Term(models.Model):
-    name = models.CharField(max_length=50) 
-    start_date = models.DateField()
-    end_date = models.DateField()
-
-class Subject(models.Model):
-    name = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.name
-
-class ClassSubject(models.Model):
-    _class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='class_subjects')
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='class_subjects')
-
-    class Meta:
-        unique_together = ['_class', 'subject']
-
-    def __str__(self):
-        return f"{self._class.name} - {self.subject.name}"
-
-class ClassSubjectTeacher(models.Model):
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='class_subject_teachers')
-    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='teachers')
-
-    class Meta:
-        unique_together = ['teacher', 'class_subject']
-
-    def __str__(self):
-        return f"{self.teacher.name} - {self.class_subject}"
-
-class ClassSubjectOutline(models.Model):
-    title = models.CharField(max_length=100)
-    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='outlines')
-    week = models.PositiveSmallIntegerField()
-
-    class Meta:
-        unique_together = ['class_subject', 'week']
-
-    def __str__(self):
-        return f"Week {self.week}: {self.title} ({self.class_subject})"
-
-class ClassOutlineNote(models.Model):
-    outline = models.ForeignKey(ClassSubjectOutline, on_delete=models.CASCADE, related_name='notes')
-    note = models.TextField()
-
-    def __str__(self):
-        return f"Note for {self.outline}"

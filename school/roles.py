@@ -5,16 +5,16 @@ from rest_framework_roles.roles import is_user, is_anon, is_admin
 #     return is_user(request, view) and request.user.role == 'admin'
 
 def is_student(request, view):
-    return is_user(request, view) and request.user.role == 'student'
+    return is_user(request, view) and request.user.role == 'Student'
 
 def is_teacher(request, view):
-    return is_user(request, view) and request.user.role == 'teacher'
+    return is_user(request, view) and request.user.role == 'Teacher'
 
 def is_applicant(request, view):
-    return is_user(request, view) and request.user.role == 'applicant'
+    return is_user(request, view) and request.user.role == 'Applicant'
 
 def is_librarian(request, view):
-    return is_user(request, view) and request.user.role == 'librarian'
+    return is_user(request, view) and request.user.role == 'Librarian'
 
 
 ROLES = {

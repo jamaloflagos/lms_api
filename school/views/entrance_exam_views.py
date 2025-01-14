@@ -18,11 +18,13 @@ class EntranceExamScoreList(generics.ListCreateAPIView):
 class EntranceExamScoreDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = EntranceExamScore.objects.all()
     serializer_class = EntranceExamScoreSerializer
+    view_permissions = {
+        'get': {'applicant': True}
+    }
 
     def get_object(self):
         queryset = self.get_queryset()
         applicant_id = self.kwargs.get("applicant_id")
-        print(applicant_id)
 
         obj = generics.get_object_or_404(queryset, applicant_id=applicant_id)
         return obj

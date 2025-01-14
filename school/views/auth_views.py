@@ -2,6 +2,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from school.models import Student
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -9,6 +10,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         
         token['role'] = user.role
+        token['username'] = user.username
+        if user.role == 'Student':
+            student_id = token['user_id']
+            student = Student.objects.get(id=student_id)
+            class_id = student._class.id
+            token['class_id'] = class_id
         
         return token
 
