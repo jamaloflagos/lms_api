@@ -130,22 +130,24 @@ class Assignment(models.Model):
     questions = models.JSONField(default=list)
     date_posted = models.DateField(auto_now_add=True)
     due_date = models.DateTimeField()
-    obtainable_mark = models.IntegerField()
+    time_allowed = models.IntegerField(default=None)
+    obtainable_mark = models.IntegerField(default=10)
     
 class Test(models.Model):
     class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='tests', default=None)
     questions = models.JSONField(default=list)
     date_posted = models.DateField(auto_now_add=True)
     due_date = models.DateTimeField()
-    obtainable_mark = models.IntegerField()
+    time_allowed = models.IntegerField(default=None)
+    obtainable_mark = models.IntegerField(default=20)
 
 class Exam(models.Model):
     class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='exams', default=None)
     questions = models.JSONField(default=list)
     date_posted = models.DateField(auto_now_add=True, null=True)
     due_date = models.DateTimeField(default=None)
-    time_allowed = models.TimeField(default=None)
-    obtainable_mark = models.IntegerField()
+    time_allowed = models.IntegerField(default=None)
+    obtainable_mark = models.IntegerField(default=70)
 
 class Score(models.Model):
     SCORE_TYPE_CHOICES = [

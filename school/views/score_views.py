@@ -11,12 +11,11 @@ class ScoreList(generics.ListCreateAPIView):
 
         student_id = self.request.query_params.get("student_id")
         subject_id = self.request.query_params.get("subject_id")
-        score_type = self.request.query_params.get("score_type")
-        if subject_id and student_id and score_type:
+        if subject_id and student_id:
             student = Student.objects.filter(id=student_id).first()
             subject = Subject.objects.filter(id=subject_id).first()
             if student and subject:
-                queryset = Score.objects.filter(student=student, subject=subject, score_type=score_type)
+                queryset = Score.objects.filter(student=student, subject=subject)
             else:
                 queryset = Score.objects.none()
 
