@@ -59,11 +59,13 @@ class ReportCardList(generics.ListCreateAPIView):
         queryset = ReportCard.objects.all()
 
         class_id = self.request.query_params.get('class_id')
-        if class_id:
+        term_id = self.request.query_params.get('term_id')
+        if class_id and term_id:
             _class = Class.objects.filter(id=class_id).first()
+            term = Term.objects.filter(id=term_id).first()
             if _class:
                 students = _class.students.all()
-                queryset = ReportCard.objects.filter(student__in=students)
+                queryset = ReportCard.objects.filter(student__in=students, term=term)
             else:
                 queryset = ReportCard.objects.none()
         
@@ -71,12 +73,12 @@ class ReportCardList(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         class_id = self.request.data.get('class_id')
-        term_start_date = self.request.data.get('term_start_date')
-        term_end_date = self.request.data.get('term_end_date')
-        if class_id and term_start_date and term_end_date:
+        term_id = self.request.data.get('term_id')
+        
+        if class_id and term_id:
             _class = Class.objects.filter(id=class_id).first()
             if _class:
-                term = Term.objects.filter(start_date=term_start_date, end_date=term_end_date)
+                term = Term.objects.filter(id=term_id).first()
                 students = _class.students.all()
                 for student in students:
                     report_card = serializer.save(student=student, term=term.name, year=term.year)

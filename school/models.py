@@ -187,7 +187,7 @@ class ScoreSheet(models.Model):
 
 class ReportCard(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='report_cards')
-    term = models.CharField(max_length=20)
+    term = models.ForeignKey(Term)
     year = models.IntegerField()
     score_sheets = models.ManyToManyField(ScoreSheet, related_name='report_cards')
     overall_total = models.IntegerField(default=0)

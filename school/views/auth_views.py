@@ -9,12 +9,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         
+        current_date = ''
+        current_term = Term.objects.filter(end_date__gt=current_date).first()
         token['role'] = user.role
         token['username'] = user.username
+        
         if user.role == 'Student':
             email = user.email
-            current_date = ''
-            current_term = Term.objects.filter(end_date__gt=current_date).first()
             student = Student.objects.filter(email=email).first()
             tuition_fee = TuitionFee.objects.filter(student=student).first()
             class_id = student._class.id
@@ -24,6 +25,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         elif user.role == 'Teacher':
             email = user.email
             teacher = Teacher.objects.filter(email=email).first()
+            token['term_id'] = current_term.id
             if teacher.is_form_teacher:
                 class_id = teacher._class.id
                 token['class_id'] = class_id
