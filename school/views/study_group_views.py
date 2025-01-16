@@ -23,6 +23,7 @@ class StudyGroupList(generics.ListCreateAPIView):
                 other_classmate_groups = StudyGroup.objects.filter(
                     creator__in=class_members
                 ).exclude(Q(students=student) | Q(creator=student))
+                
                 queryset = other_classmate_groups
 
         return queryset
@@ -53,7 +54,7 @@ class StudyGroupInfoList(generics.ListAPIView):
         if data == "messages":
             return group.messages.all()
         elif data == "members":
-            return group.students.all()
+            return group.members.all()
 
 
 class StudyGroupDetail(generics.RetrieveUpdateDestroyAPIView):

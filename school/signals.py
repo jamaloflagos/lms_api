@@ -1,3 +1,5 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 import random
 import string
 from django.db.models.signals import post_save, post_delete
@@ -136,3 +138,143 @@ def delete_associated_user(sender, instance, **kwargs):
         user.delete()
     except User.DoesNotExist:
         pass  # User might not exist, ignore
+
+@receiver(post_save, sender=Assignment) 
+def notify_students_on_assignment(sender, instance, created, **kwargs):
+    if created:
+        # Notify all students in the class
+        channel_layer = get_channel_layer()
+
+        students = instance.class_subject._class.students.all() 
+        for student in students:
+            Notification.objects.create(
+                user=student.user,
+                message=f"A new assignment has been posted in: {instance.class_subject.subject.name}"
+            )
+        
+            async_to_sync(channel_layer.group_send)(
+                f"user_{student.user.id}", {
+                    "type": "notifications",
+                    "message": {"text": f"A new assignment has been posted in: {instance.class_subject.subject.name}"}
+                }
+            )
+
+@receiver(post_save, sender=Exam) 
+def notify_students_on_exam(sender, instance, created, **kwargs):
+    if created:
+        # Notify all students in the class
+        channel_layer = get_channel_layer()
+
+        students = instance.class_subject._class.students.all() 
+        for student in students:
+            notification = Notification.objects.create(
+                user=student.user,
+                message=f"A new exam has been posted in: {instance.class_subject.subject.name}"
+            )
+        
+            async_to_sync(channel_layer.group_send)(
+                f"user_{student.user.id}", {
+                    "type": "notifications",
+                    "payload": notification
+                }
+            )
+
+@receiver(post_save, sender=Test) 
+def notify_students_on_test(sender, instance, created, **kwargs):
+    if created:
+        # Notify all students in the class
+        channel_layer = get_channel_layer()
+
+        students = instance.class_subject._class.students.all() 
+        for student in students:
+            notification = Notification.objects.create(
+                user=student.user,
+                message=f"A new test has been posted in: {instance.class_subject.subject.name}"
+            )
+        
+            async_to_sync(channel_layer.group_send)(
+                f"user_{student.user.id}", {
+                    "type": "notifications",
+                    "payload": notification
+                }
+            )
+
+@receiver(post_save, sender=Outline) 
+def notify_students_on_outline(sender, instance, created, **kwargs):
+    if created:
+        # Notify all students in the class
+        channel_layer = get_channel_layer()
+
+        students = instance.class_subject._class.students.all() 
+        for student in students:
+            notification = Notification.objects.create(
+                user=student.user,
+                message=f"A new outline has been posted in: {instance.class_subject.subject.name}"
+            )
+        
+            async_to_sync(channel_layer.group_send)(
+                f"user_{student.user.id}", {
+                    "type": "notifications",
+                    "payload": notification
+                }
+            )
+
+@receiver(post_save, sender=Note) 
+def notify_students_on_note(sender, instance, created, **kwargs):
+    if created:
+        # Notify all students in the class
+        channel_layer = get_channel_layer()
+
+        students = instance.outline.class_subject._class.students.all() 
+        for student in students:
+            notification = Notification.objects.create(
+                user=student.user,
+                message=f"A new note has been posted in: {instance.outline.class_subject.subject.name}"
+            )
+        
+            async_to_sync(channel_layer.group_send)(
+                f"user_{student.user.id}", {
+                    "type": "notifications",
+                    "payload": notification
+                }
+            )
+
+@receiver(post_save, sender=Message)
+def notify_recipient_on_message(sender, instance, created, **kwargs):
+    if created:
+        channel_layer = get_channel_layer()
+        notification = Notification.objects.create(
+            user=instance.recipient,
+            message=f"You received a new message from {instance.sender.username}: {instance.content[:50]}"
+        )
+    
+        async_to_sync(channel_layer.group_send)(
+                    f"user_{instance.recipient.id}", {
+                        "type": "notifications",
+                        "payload": notification
+                    }
+                )
+
+
+@receiver(post_save, sender=GroupMessage)
+def notify_group_members(sender, instance, created, **kwargs):
+    if created:
+        group = instance.group
+        sender = instance.sender
+        channel_layer = get_channel_layer()
+
+        for member in group.members.all():
+            if member != sender:  # Avoid notifying the sender
+                # Create a notification for each member
+                notification = Notification.objects.create(
+                    user=member,
+                    message=f"New message in {group.name} from {sender.username}: {instance.content[:50]}"
+                )
+
+                # Send WebSocket notification
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{member.id}", {
+                        "type": "notifications",
+                        "payload": notification
+                    }
+                )

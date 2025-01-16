@@ -327,24 +327,6 @@ class Checkout(models.Model):
     days_requested = models.IntegerField()
     returned = models.BooleanField(default=False)
 
-class StudyGroup(models.Model):
-    name = models.CharField(max_length=255)
-    group_name = models.CharField(max_length=128, blank=True, default=shortuuid.uuid)
-    description = models.TextField(blank=True)
-    students = models.ManyToManyField(Student, related_name='study_groups', blank=True)
-    students_online = models.ManyToManyField(Student, related_name='online_in_groups', blank=True)
-    creator = models.ForeignKey(Student, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_groups")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-class Message(models.Model):
-    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name="messages")
-    sender = models.ForeignKey(Student, on_delete=models.CASCADE)
-    content = models.TextField()
-    sent_at = models.DateTimeField(auto_now_add=True)
-
 class StudentPayment(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='payments')
     balance = models.FloatField()
@@ -362,10 +344,44 @@ class Payment(models.Model):
     class Meta:
         unique_together = ['type', '_class']
 
-
 class TuitionFee(models.Model):
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name='tuition_fees')
     term = models.ForeignKey(Term, on_delete=models.PROTECT, related_name='tuition_fees')
     balance = models.FloatField(default=0.0)
     paid = models.FloatField(default=0.0)
     has_made_full_payment = models.BooleanField(default=False)
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}"
+    
+class Message(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message from {self.sender.username} to {self.recipient.username}"
+
+class Group(models.Model):
+    name = models.CharField(max_length=255)
+    group_name = models.CharField(max_length=128, blank=True, default=shortuuid.uuid)
+    description = models.TextField(blank=True)
+    members = models.ManyToManyField(Student, related_name='study_groups', blank=True)
+    students_online = models.ManyToManyField(Student, related_name='online_in_groups', blank=True)
+    creator = models.ForeignKey(Student, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_groups")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class GroupMessage(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="group_messages")
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
