@@ -146,6 +146,16 @@ class ReportCardSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_field = ['__all__']
 
+class TermSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Term
+        fields = '__all__'
+
+class TuitionFeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TuitionFee
+        fields = '__all__'
+
 class StudyGroupSerializer(serializers.ModelSerializer):
     creator_details = serializers.SerializerMethodField()
     students = StudentSerializer(many=True, read_only=True)

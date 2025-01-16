@@ -11,13 +11,15 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=EntranceExamScore)
-def handle_axamScore_save(sender, instance, created, **kwargs):
+def handle_entrance_exam_score_save(sender, instance, created, **kwargs):
     if not created:
         return  # Skip if the instance is not newly created
 
     applicant = Applicant.objects.get(application_id=instance.applicant_id)
     score = instance.value
     percentage = instance.percentage  
+    current_date = ''
+    current_term = Term.objects.filter(end_date__gt=current_date).first()
 
     if percentage >= 50:
         # Create Parent, Student records if percentage is 50 or more
@@ -38,6 +40,8 @@ def handle_axamScore_save(sender, instance, created, **kwargs):
             _class=applicant.class_applied_for,
             parent=parent,
             email = applicant.contact_mail,
+            d_o_b = applicant.d_o_b,
+            student_d=f"{applicant.first_name.index(0)}{applicant.last_name.index(0)}{applicant.d_o_b}"
         )
 
         if student:
@@ -45,8 +49,9 @@ def handle_axamScore_save(sender, instance, created, **kwargs):
             subjects = _class.class_subjects.all()
             for subject in subjects:
                 ScoreSheet.objects.create(student=student, subject=subject)
+            TuitionFee.objects.create(student=student, term=current_term, balance=40000.00)
 
-            user = User.objects.create_user(email=applicant.contact_mail, username=f"{applicant.first_name} {applicant.last_name}", password=password, role='Student')
+            user = User.objects.create_user(id=student.id, email=applicant.email, username=f"{applicant.first_name} {applicant.last_name}", password=password, role='Student')
             if user:
                 send_email(
                     subject='Congratulations on Your Entrance Exam Score!',
@@ -65,7 +70,7 @@ def handle_axamScore_save(sender, instance, created, **kwargs):
                     Best regards,
                     The Admissions Team
                     ''',
-                    recipient_list=[applicant.contact_mail]
+                    recipient_list=[applicant.email]
                 )
             else: 
                 pass

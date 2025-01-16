@@ -2,7 +2,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from school.models import Student, Teacher
+from school.models import Student, Teacher, Applicant, TuitionFee, Term
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -13,9 +13,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         if user.role == 'Student':
             email = user.email
+            current_date = ''
+            current_term = Term.objects.filter(end_date__gt=current_date).first()
             student = Student.objects.filter(email=email).first()
+            tuition_fee = TuitionFee.objects.filter(student=student).first()
             class_id = student._class.id
             token['class_id'] = class_id
+            token['has_made_full_tuition_fee_payment'] = tuition_fee.has_made_full_payment
+            token['term_id'] = current_term.id
         elif user.role == 'Teacher':
             email = user.email
             teacher = Teacher.objects.filter(email=email).first()
@@ -23,6 +28,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 class_id = teacher._class.id
                 token['class_id'] = class_id
                 token['is_form_teacher'] = True
+        elif user.role == 'Applicant':
+            email = user.email
+            applicant = Applicant.objects.filter(email=email).first()
+            token['has_made_payment'] = applicant.has_made_payment
+
         
         return token
 

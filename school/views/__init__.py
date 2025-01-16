@@ -16,3 +16,4 @@ from .exam_views import *
 from .schedule_views import *
 from .auth_views import *
 from .subject_views import *
+from .term_views import *

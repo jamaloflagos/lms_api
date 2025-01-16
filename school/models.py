@@ -61,16 +61,17 @@ class Applicant(models.Model):
     application_id = models.CharField(max_length=10, unique=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    contact_mail = models.EmailField(default=None, unique=True)
+    email = models.EmailField(default=None, unique=True)
     address = models.TextField()
-    contact_phone = models.CharField(max_length=24)
+    phone_number = models.CharField(max_length=24)
+    d_o_b = models.DateField()
     parent_first_name = models.CharField(max_length=64)
     parent_last_name = models.CharField(max_length=64)
-    parent_contact_mail = models.EmailField(default=None,)
+    parent_email = models.EmailField(default=None,)
     parent_address = models.TextField()
-    parent_contact_phone = models.CharField(max_length=24)
+    parent_phone_number = models.CharField(max_length=24)
     class_applied_for = models.ForeignKey(Class, on_delete=models.CASCADE, null=True, related_name="applicants")
-    made_payment = models.BooleanField(default=False)
+    has_made_payment = models.BooleanField(default=False)
 
     # def __str__(self):
     #     return f"class: {self.class_applied_for}"
@@ -96,6 +97,8 @@ class Student(models.Model):
     parent = models.ForeignKey(Parent, on_delete=models.SET_NULL, null=True, related_name="children")
     email = models.EmailField(default=None, unique=True)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default=None)
+    student_id = models.CharField(max_length=20)
+    d_o_b = models.DateField()
  
     class Meta:
         db_table = "student"
@@ -228,7 +231,12 @@ class Note(models.Model):
     def __str__(self):
         return f'Note for {self.outline}'
 
-
+class TuitionFee(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name='tuition_fees')
+    term = models.ForeignKey(Term, on_delete=models.PROTECT, related_name='tuition_fees')
+    balance = models.FloatField()
+    paid = models.FloatField(default=0.0)
+    has_made_full_payment = models.BooleanField(default=False)
 
 class Course(models.Model):
     OPEN = 'Open'
@@ -354,3 +362,10 @@ class Payment(models.Model):
     class Meta:
         unique_together = ['type', '_class']
 
+
+class TuitionFee(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name='tuition_fees')
+    term = models.ForeignKey(Term, on_delete=models.PROTECT, related_name='tuition_fees')
+    balance = models.FloatField(default=0.0)
+    paid = models.FloatField(default=0.0)
+    has_made_full_payment = models.BooleanField(default=False)
