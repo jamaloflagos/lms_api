@@ -9,7 +9,7 @@ class NotificationListView(APIView):
     }
 
     def get(self, request):
-        notifications = request.user.notifications.all()
+        notifications = request.user.notifications.filter(is_read=False)
         return Response(
             [{"id": n.id, "message": n.message, "created_at": n.created_at} for n in notifications]
         )
