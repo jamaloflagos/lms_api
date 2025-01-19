@@ -165,8 +165,9 @@ class TuitionFeeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class StudyGroupSerializer(serializers.ModelSerializer):
-    creator_details = serializers.SerializerMethodField()
-    students = StudentSerializer(many=True, read_only=True)
+    is_member = serializers.SerializerMethodField()
+    is_creator = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
@@ -174,18 +175,28 @@ class StudyGroupSerializer(serializers.ModelSerializer):
         read_only_fields = ["group_name", "created_at"]
 
     def create(self, validated_data):
-        creator = validated_data.get("creator")
-        # student = Student.objects.get(id=creator)
+        creator = validated_data.get('creator')
         group = Group.objects.create(**validated_data)
-        group.students.add(creator)
+        group.members.add(creator)
 
         return group
 
-    def get_creator_details(self, obj):
-        return {
-            "id": obj.creator.id,
-            "name": f"{obj.creator.first_name} {obj.creator.last_name}",
-        }
+    def get_creator_name(self, obj):
+            return f"{obj.creator.first_name} {obj.creator.last_name}"
+        
+    def get_is_member(self, obj):
+        student_id = self.context.get("student_id")
+        if student_id:
+            is_member = obj.members.filter(id=student_id).exists()
+            return is_member
+        return False
+    
+    def get_is_creator(self, obj):
+        student_id = self.context.get("student_id")
+        if student_id:
+            return str(obj.creator.id) == student_id
+        return False
+
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_details = serializers.SerializerMethodField()

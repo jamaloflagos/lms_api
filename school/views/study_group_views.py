@@ -12,21 +12,22 @@ class StudyGroupList(generics.ListCreateAPIView):
 
     def get_queryset(self):
         student_id = self.request.query_params.get('student_id')
-        is_member = self.request.query_params.get('is_member')
         queryset = Group.objects.all()
-        if student_id and is_member:
-            student = Student.objects.get(pk=student_id)
-            if is_member == 'yes':
-                queryset = student.study_groups.all()
-            elif is_member == 'no':
-                class_members = student._class.students.exclude(id=student.id)
-                other_classmate_groups = Group.objects.filter(
-                    creator__in=class_members
-                ).exclude(Q(students=student) | Q(creator=student))
-
-                queryset = other_classmate_groups
+        if student_id:
+            student = Student.objects.filter(pk=student_id).first()
+            if student:
+                class_members = student._class.students.all()
+                queryset = Group.objects.filter(creator__in=class_members)
+            else: 
+                queryset = Group.objects.none()
 
         return queryset
+    
+    def get_serializer_context(self):
+        # Add student_id to the serializer context
+        context = super().get_serializer_context()
+        context["student_id"] = self.request.query_params.get("student_id")
+        return context
     
 class StudyGroupInfoList(generics.ListAPIView):
     """
