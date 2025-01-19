@@ -5,6 +5,10 @@ from school.serializers import ScoreSerializer, ScoreSheetSerializer, ReportCard
 class ScoreList(generics.ListCreateAPIView):
     queryset = Score.objects.all()
     serializer_class = ScoreSerializer
+    view_permissions = {
+        'get': {'teacher': True, 'student': True, 'admin': True},
+        'post': {'student': True}
+    }
 
     def get_queryset(self):
         queryset = Score.objects.all()
@@ -25,10 +29,16 @@ class ScoreList(generics.ListCreateAPIView):
 class ScoreDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Score.objects.all()
     serializer_class = ScoreSerializer
+    view_permissions = {
+        'get': {'teacher': True, 'student': True, 'admin': True}
+    }
 
 
 class ScoreSheetList(generics.ListAPIView):
     serializer_class = ScoreSheetSerializer
+    view_permissions = {
+        'get': {'teacher': True, 'student': True, 'admin': True}
+    }
 
     def get_queryset(self):
         queryset = ScoreSheet.objects.all()
@@ -54,6 +64,10 @@ class ScoreSheetList(generics.ListAPIView):
 
 class ReportCardList(generics.ListCreateAPIView):
     serializer_class = ReportCardSerializer
+    view_permissions = {
+        'get': {'teacher': True, 'student': True, 'admin': True},
+        'post': {'teacher': True}
+    }
 
     def get_queryset(self):
         queryset = ReportCard.objects.all()
@@ -94,4 +108,8 @@ class ReportCardDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = ReportCard.objects.all()
     lookup_field = 'student'
     serializer_class = ReportCardSerializer
+    view_permissions = {
+        'get': {'teacher': True, 'student': True, 'admin': True},
+        'put': {'teacher': True}
+    }
 

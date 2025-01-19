@@ -3,13 +3,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from school.models import Student, Teacher, Applicant, TuitionFee, Term
+from datetime import date
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         
-        current_date = ''
+        current_date = date.today()
         current_term = Term.objects.filter(end_date__gt=current_date).first()
         token['role'] = user.role
         token['username'] = user.username
@@ -27,9 +28,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             teacher = Teacher.objects.filter(email=email).first()
             token['term_id'] = current_term.id
             if teacher.is_form_teacher:
-                class_id = teacher._class.id
+                class_id = teacher.form_class.id
                 token['class_id'] = class_id
                 token['is_form_teacher'] = True
+                token['form_class'] = teacher.form_class.name
         elif user.role == 'Applicant':
             email = user.email
             applicant = Applicant.objects.filter(email=email).first()
@@ -44,6 +46,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        print(request)
         response = super().post(request, *args, **kwargs)
         refresh_token = response.data.get('refresh')
         access_token = response.data.get('access')

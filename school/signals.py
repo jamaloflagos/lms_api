@@ -1,7 +1,8 @@
+import string
+import random
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-import random
-import string
+from datetime import date
 from django.db.models.signals import post_save, post_delete
 from django.contrib.auth import get_user_model
 from django.dispatch import receiver
@@ -12,15 +13,18 @@ from .models import *
 User = get_user_model()
 
 
+
+
 @receiver(post_save, sender=EntranceExamScore)
 def handle_entrance_exam_score_save(sender, instance, created, **kwargs):
     if not created:
+        print('Yes')
         return  # Skip if the instance is not newly created
 
-    applicant = Applicant.objects.get(application_id=instance.applicant_id)
+    applicant = Applicant.objects.filter(id=instance.applicant.id).first()
     score = instance.value
     percentage = instance.percentage  
-    current_date = ''
+    current_date = date.today()
     current_term = Term.objects.filter(end_date__gt=current_date).first()
 
     if percentage >= 50:
@@ -28,33 +32,39 @@ def handle_entrance_exam_score_save(sender, instance, created, **kwargs):
         parent, created = Parent.objects.get_or_create(
             first_name=applicant.parent_first_name,
             last_name=applicant.parent_last_name,
-            contact_mail=applicant.parent_contact_mail,
+            contact_mail=applicant.parent_email,
             address=applicant.parent_address,
-            contact_phone=applicant.parent_contact_phone,
+            contact_phone=applicant.parent_phone_number,
             emergency_phone=''  
         )
 
         password = ''.join(random.choices(string.ascii_letters + string.digits, k=15))
 
-        student = Student.objects.get_or_create(
+        student, created = Student.objects.get_or_create(
             first_name=applicant.first_name,
             last_name=applicant.last_name,
             _class=applicant.class_applied_for,
             parent=parent,
-            email = applicant.contact_mail,
+            email = applicant.email,
             d_o_b = applicant.d_o_b,
-            student_d=f"{applicant.first_name.index(0)}{applicant.last_name.index(0)}{applicant.d_o_b}"
+            gender = applicant.gender,
+            # student_d=f"{applicant.first_name.index(0)}{applicant.last_name.index(0)}{applicant.d_o_b}"
         )
 
         if student:
             _class = student._class
-            subjects = _class.class_subjects.all()
-            for subject in subjects:
-                ScoreSheet.objects.create(student=student, subject=subject)
+            class_subjects = _class.class_subjects.all()
+            for class_subject in class_subjects:
+                subject = Subject.objects.filter(id=class_subject.subject.id).first()
+                ScoreSheet.objects.create(student=student, subject=subject) 
             TuitionFee.objects.create(student=student, term=current_term, balance=40000.00)
 
-            user = User.objects.create_user(id=student.id, email=applicant.email, username=f"{applicant.first_name} {applicant.last_name}", password=password, role='Student')
+            user = User.objects.filter(id=applicant.id).first()
             if user:
+                user.id = student.id
+                user.password = password
+                user.role = 'Student'
+                student.user = user
                 send_email(
                     subject='Congratulations on Your Entrance Exam Score!',
                     message=f'''
@@ -65,7 +75,7 @@ def handle_entrance_exam_score_save(sender, instance, created, **kwargs):
                     Your account has been created. Below are your login credentials:
 
                     Email: {user.email}
-                    Password: {user.password}
+                    Password: {password}
 
                     Please log in and change your password as soon as possible.
 

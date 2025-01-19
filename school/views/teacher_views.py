@@ -36,7 +36,7 @@ class TeacherList(generics.ListCreateAPIView):
                     class_subject = ClassSubject.objects.get(_class=class_id, subject=subject['subject_id'])
                     ClassSubjectTeacher.objects.create(teacher=teacher, class_subject=class_subject)
                     
-        User.objects.create_user(email=teacher.email, username=f"{teacher.first_name} {teacher.last_name}", password=password, role='Teacher')
+        User.objects.create_user(id=teacher.id, email=teacher.email, username=f"{teacher.first_name} {teacher.last_name}", password=password, role='Teacher')
 
         # Send an email to the teacher with the password
         send_mail(
@@ -63,7 +63,8 @@ class TeacherDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Teacher.objects.all()
     serializer_class = TeacherSerializer
     view_permissions = {
-        'put,get': {'teacher': True},
-        'get,delete': {'admin': True},
+        'get': {'teacher': True, 'admin': True},
+        'put': {'admin': True, 'admin': True},
+        'delete': {'admin': True}
     }
 

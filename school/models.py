@@ -58,13 +58,18 @@ class Parent(models.Model):
         db_table = "parent"
 
 class Applicant(models.Model):
+    GENDER_CHOICES = [
+        ('Male', 'Male'),
+        ('Female', 'Female')
+    ]
     application_id = models.CharField(max_length=10, unique=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     email = models.EmailField(default=None, unique=True)
     address = models.TextField()
     phone_number = models.CharField(max_length=24)
-    d_o_b = models.DateField()
+    d_o_b = models.DateField(default=None, null=True)
+    gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default=None, null=True)
     parent_first_name = models.CharField(max_length=64)
     parent_last_name = models.CharField(max_length=64)
     parent_email = models.EmailField(default=None,)
@@ -82,7 +87,7 @@ class EntranceExamQuestion(models.Model):
     answer = models.SmallIntegerField()
 
 class EntranceExamScore(models.Model):
-    applicant_id = models.CharField(max_length=10, unique=True)
+    applicant = models.ForeignKey(Applicant, on_delete=models.CASCADE, related_name='score')
     value = models.SmallIntegerField()
     percentage = models.SmallIntegerField()
 
@@ -97,8 +102,8 @@ class Student(models.Model):
     parent = models.ForeignKey(Parent, on_delete=models.SET_NULL, null=True, related_name="children")
     email = models.EmailField(default=None, unique=True)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default=None)
-    student_id = models.CharField(max_length=20)
-    d_o_b = models.DateField()
+    d_o_b = models.DateField(default=None, null=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='user', null=True, default=None)
  
     class Meta:
         db_table = "student"
@@ -132,7 +137,7 @@ class Assignment(models.Model):
     class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='assignments', default=None)
     questions = models.JSONField(default=list)
     date_posted = models.DateField(auto_now_add=True)
-    due_date = models.DateTimeField()
+    due_date = models.DateField()
     time_allowed = models.IntegerField(default=None)
     obtainable_mark = models.IntegerField(default=10)
     
@@ -140,7 +145,7 @@ class Test(models.Model):
     class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='tests', default=None)
     questions = models.JSONField(default=list)
     date_posted = models.DateField(auto_now_add=True)
-    due_date = models.DateTimeField()
+    due_date = models.DateField()
     time_allowed = models.IntegerField(default=None)
     obtainable_mark = models.IntegerField(default=20)
 
@@ -148,7 +153,7 @@ class Exam(models.Model):
     class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='exams', default=None)
     questions = models.JSONField(default=list)
     date_posted = models.DateField(auto_now_add=True, null=True)
-    due_date = models.DateTimeField(default=None)
+    due_date = models.DateField(default=None)
     time_allowed = models.IntegerField(default=None)
     obtainable_mark = models.IntegerField(default=70)
 
@@ -171,7 +176,7 @@ class ScoreSheet(models.Model):
     test_score = models.IntegerField(default=0)
     exam_score = models.IntegerField(default=0)
     total_score = models.IntegerField(default=0)
-    grade = models.CharField(max_length=10, default=None)
+    grade = models.CharField(max_length=10, default=None, null=True)
 
     def calculate_total(self):
         self.total_score = self.assignment_score + self.test_score + self.exam_score
@@ -187,7 +192,7 @@ class ScoreSheet(models.Model):
 
 class ReportCard(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='report_cards')
-    term = models.ForeignKey(Term)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='report_cards')
     year = models.IntegerField()
     score_sheets = models.ManyToManyField(ScoreSheet, related_name='report_cards')
     overall_total = models.IntegerField(default=0)
@@ -210,18 +215,18 @@ class ClassSubjectTeacher(models.Model):
         unique_together = ['teacher', 'class_subject']
 
     def __str__(self):
-        return f'{self.teacher.name} - {self.class_subject}'
+        return f'{self.teacher.first_name} - {self.class_subject}'
 
 class Outline(models.Model):
     title = models.CharField(max_length=100)
-    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='outlines')
+    class_subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE, related_name='outlines', null=True, default=None)
     week = models.PositiveSmallIntegerField()
 
     class Meta:
         unique_together = ['class_subject', 'week']
 
     def __str__(self):
-        return f'Week {self.week}: {self.title} ({self.class_subject})'
+        return f'Week {self.week}: {self.title} ({self.class_subject}) id: {self.id}'
 
 class Note(models.Model):
     outline = models.ForeignKey(Outline, on_delete=models.CASCADE, related_name='notes')
@@ -344,13 +349,6 @@ class Payment(models.Model):
     class Meta:
         unique_together = ['type', '_class']
 
-class TuitionFee(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name='tuition_fees')
-    term = models.ForeignKey(Term, on_delete=models.PROTECT, related_name='tuition_fees')
-    balance = models.FloatField(default=0.0)
-    paid = models.FloatField(default=0.0)
-    has_made_full_payment = models.BooleanField(default=False)
-
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     message = models.TextField()
@@ -360,8 +358,8 @@ class Notification(models.Model):
         return f"Notification for {self.user.username}"
     
 class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages", default=None)
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages", default=None)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

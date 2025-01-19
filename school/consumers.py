@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Message, Student, StudyGroup
+from .models import Message, Student, Group
 from django.shortcuts import get_object_or_404
 import json
 
@@ -41,7 +41,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if object == 'student':
             return get_object_or_404(Student, pk=lk_value)
         elif object == 'group':
-            return get_object_or_404(StudyGroup, group_name=lk_value)
+            return get_object_or_404(Group, group_name=lk_value)
 
     async def chat_message(self, event):
         message = event['message']

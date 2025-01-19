@@ -13,6 +13,9 @@ class EntranceExamQuestionList(generics.ListCreateAPIView):
 class EntranceExamScoreList(generics.ListCreateAPIView):
     queryset = EntranceExamScore.objects.all()
     serializer_class = EntranceExamScoreSerializer
+    view_permissions = {
+        'post': {'applicant': True} 
+    }
 
 
 class EntranceExamScoreDetail(generics.RetrieveUpdateDestroyAPIView):

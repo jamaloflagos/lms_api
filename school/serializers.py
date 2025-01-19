@@ -34,19 +34,15 @@ class ApplicantSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class ClassSerializer(serializers.ModelSerializer):
-    # form_teacher_details = serializers.SerializerMethodField()
+    students = serializers.SerializerMethodField()
 
     class Meta:
         model = Class
         fields = "__all__"
 
-    # def get_form_teacher_details(self, obj):
-    #     try:
-    #         return {
-    #             "name": f"{obj.form_teacher.first_name} {obj.form_teacher.last_name}"
-    #         }
-    #     except Class.form_teacher.RelatedObjectDoesNotExist:
-    #         return {"name": "No form teacher assigned"}
+    def get_students(self, obj):
+        student_count = obj.students.count()
+        return student_count
 
 class TeacherSerializer(serializers.ModelSerializer):
     form_class = serializers.PrimaryKeyRelatedField(
@@ -101,30 +97,42 @@ class ClassSubjectSerializer(serializers.ModelSerializer):
 class OutlineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Outline
-        fields = ['title', 'week']
+        fields = '__all__'
+        extra_kwargs = {
+            'class_subject': {'required': False},
+        }
 
 class NoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Note
         fields = '__all__'
+        extra_kwargs = {
+            'outline': {'required': False},
+        }
 
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = '__all__'
-        exclude = ['class_subject']
+        extra_kwargs = {
+            'class_subject': {'required': False},
+        }
 
 class TestSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Assignment
+        model = Test
         fields = '__all__'
-        exclude = ['class_subject']
+        extra_kwargs = {
+            'class_subject': {'required': False},
+        }
         
 class ExamSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Assignment
+        model = Exam
         fields = '__all__'
-        exclude = ['class_subject']
+        extra_kwargs = {
+            'class_subject': {'required': False},
+        }
 
 class ScoreSerializer(serializers.ModelSerializer):
     class Meta:
@@ -161,14 +169,14 @@ class StudyGroupSerializer(serializers.ModelSerializer):
     students = StudentSerializer(many=True, read_only=True)
 
     class Meta:
-        model = StudyGroup
+        model = Group
         fields = "__all__"
         read_only_fields = ["group_name", "created_at"]
 
     def create(self, validated_data):
         creator = validated_data.get("creator")
         # student = Student.objects.get(id=creator)
-        group = StudyGroup.objects.create(**validated_data)
+        group = Group.objects.create(**validated_data)
         group.students.add(creator)
 
         return group
