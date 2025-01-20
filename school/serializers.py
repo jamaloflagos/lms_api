@@ -164,7 +164,7 @@ class TuitionFeeSerializer(serializers.ModelSerializer):
         model = TuitionFee
         fields = '__all__'
 
-class StudyGroupSerializer(serializers.ModelSerializer):
+class GroupSerializer(serializers.ModelSerializer):
     is_member = serializers.SerializerMethodField()
     is_creator = serializers.SerializerMethodField()
     creator_name = serializers.SerializerMethodField()
@@ -173,6 +173,9 @@ class StudyGroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = "__all__"
         read_only_fields = ["group_name", "created_at"]
+        extra_kwargs = {
+            'name': {'required': False},
+        }
 
     def create(self, validated_data):
         creator = validated_data.get('creator')

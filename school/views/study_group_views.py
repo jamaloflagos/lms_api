@@ -2,10 +2,10 @@ from rest_framework import generics
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from school.models import Group, Student
-from school.serializers import StudyGroupSerializer, MessageSerializer, StudentSerializer
+from school.serializers import GroupSerializer, MessageSerializer, StudentSerializer
 
 class StudyGroupList(generics.ListCreateAPIView):
-    serializer_class = StudyGroupSerializer
+    serializer_class = GroupSerializer
     view_permissions = {
         'get,post': {'student': True}
     }
@@ -60,7 +60,7 @@ class StudyGroupInfoList(generics.ListAPIView):
 
 class StudyGroupDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Group.objects.all()
-    serializer_class = StudyGroupSerializer
+    serializer_class = GroupSerializer
     view_permissions = {
         'put,get': {'student': True}
     }
@@ -70,10 +70,11 @@ class StudyGroupDetail(generics.RetrieveUpdateDestroyAPIView):
     """
 
     def perform_update(self, serializer):
-        student_id = self.kwargs["student_id"]
-        group_id = self.kwargs["pk"]
-        group = get_object_or_404(Group, pk=group_id)
-        student = get_object_or_404(Student, pk=student_id)
-        group.students.add(student)
+        student_id = self.request.data.get('student_id')
+        if student_id:
+            group_id = self.kwargs["pk"]
+            group = Group.objects.filter(id=group_id).first()
+            student = Student.objects.filter(id=student_id).first()
+            group.members.add(student)
 
         serializer.save()
