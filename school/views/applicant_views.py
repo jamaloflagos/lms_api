@@ -20,7 +20,7 @@ class ApplicantList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         email = serializer.validated_data.get("email")
-
+        print(serializer.validated_data)
         # Check if there is an existing applicant with the same contact_mail or parent_contact_mail
         if Applicant.objects.filter(email=email).exists():
             response_message = {"contact_mail": "Email already exists"}

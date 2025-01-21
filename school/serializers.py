@@ -201,11 +201,11 @@ class GroupSerializer(serializers.ModelSerializer):
         return False
 
 
-class MessageSerializer(serializers.ModelSerializer):
+class GroupMessageSerializer(serializers.ModelSerializer):
     sender_details = serializers.SerializerMethodField()
 
     class Meta:
-        model = Message
+        model = GroupMessage
         fields = "__all__"
 
     def get_sender_details(self, obj):

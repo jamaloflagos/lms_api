@@ -1,8 +1,8 @@
 from rest_framework import generics
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from school.models import Group, Student
-from school.serializers import GroupSerializer, MessageSerializer, StudentSerializer
+from school.models import Group, Student, GroupMessage
+from school.serializers import GroupSerializer, GroupMessageSerializer, StudentSerializer
 
 class StudyGroupList(generics.ListCreateAPIView):
     serializer_class = GroupSerializer
@@ -40,10 +40,10 @@ class StudyGroupInfoList(generics.ListAPIView):
     }
 
     def get_serializer_class(self):
-        data = self.request.query_params.get("data")
+        data = self.kwargs.get("data")
 
         if data == "messages":
-            return MessageSerializer
+            return GroupMessageSerializer
         elif data == "members":
             return StudentSerializer
 
@@ -78,3 +78,8 @@ class StudyGroupDetail(generics.RetrieveUpdateDestroyAPIView):
             group.members.add(student)
 
         serializer.save()
+
+class CreateGroupMessage(generics.CreateAPIView):
+    queryset = GroupMessage
+    serializer_class = GroupMessageSerializer
+    view_permissions = {'post': {'student': True}}

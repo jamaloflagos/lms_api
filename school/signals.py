@@ -2,6 +2,7 @@ import string
 import random
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.forms.models import model_to_dict
 from datetime import date
 from django.db.models.signals import post_save, post_delete
 from django.contrib.auth import get_user_model
@@ -22,6 +23,7 @@ def handle_entrance_exam_score_save(sender, instance, created, **kwargs):
         return  # Skip if the instance is not newly created
 
     applicant = Applicant.objects.filter(id=instance.applicant.id).first()
+    print(applicant.id)
     score = instance.value
     percentage = instance.percentage  
     current_date = date.today()
@@ -61,29 +63,29 @@ def handle_entrance_exam_score_save(sender, instance, created, **kwargs):
 
             user = User.objects.filter(id=applicant.id).first()
             if user:
-                user.id = student.id
-                user.password = password
-                user.role = 'Student'
-                student.user = user
-                send_email(
-                    subject='Congratulations on Your Entrance Exam Score!',
-                    message=f'''
-                    Dear {applicant.first_name},
+                user.delete()
+                new_user = User.objects.create_user(id=student.id, email=applicant.email, username=f"{applicant.first_name} {applicant.last_name}", password=password, role='Student')
+                if new_user:
+                    student.user = new_user
+                    send_email(
+                        subject='Congratulations on Your Entrance Exam Score!',
+                        message=f'''
+                        Dear {applicant.first_name},
 
-                    Congratulations! You have scored {score} which is {percentage}% on your entrance exam.
+                        Congratulations! You have scored {score} which is {percentage}% on your entrance exam.
 
-                    Your account has been created. Below are your login credentials:
+                        Your account has been created. Below are your login credentials:
 
-                    Email: {user.email}
-                    Password: {password}
+                        Email: {user.email}
+                        Password: {password}
 
-                    Please log in and change your password as soon as possible.
+                        Please log in and change your password as soon as possible.
 
-                    Best regards,
-                    The Admissions Team
-                    ''',
-                    recipient_list=[applicant.email]
-                )
+                        Best regards,
+                        The Admissions Team
+                        ''',
+                        recipient_list=[applicant.email]
+                    )
             else: 
                 pass
         else:
@@ -249,21 +251,21 @@ def notify_students_on_note(sender, instance, created, **kwargs):
                 }
             )
 
-@receiver(post_save, sender=Message)
-def notify_recipient_on_message(sender, instance, created, **kwargs):
-    if created:
-        channel_layer = get_channel_layer()
-        notification = Notification.objects.create(
-            user=instance.recipient,
-            message=f"You received a new message from {instance.sender.username}: {instance.content[:50]}"
-        )
+# @receiver(post_save, sender=Message)
+# def notify_recipient_on_message(sender, instance, created, **kwargs):
+#     if created:
+#         channel_layer = get_channel_layer()
+#         notification = Notification.objects.create(
+#             user=instance.recipient,
+#             message=f"You received a new message from {instance.sender.username}: {instance.content[:50]}"
+#         )
     
-        async_to_sync(channel_layer.group_send)(
-                    f"user_{instance.recipient.id}", {
-                        "type": "notifications",
-                        "payload": notification
-                    }
-                )
+#         async_to_sync(channel_layer.group_send)(
+#                     f"user_{instance.recipient.id}", {
+#                         "type": "notifications",
+#                         "payload": notification
+#                     }
+#                 )
 
 
 @receiver(post_save, sender=GroupMessage)
@@ -276,8 +278,9 @@ def notify_group_members(sender, instance, created, **kwargs):
         for member in group.members.all():
             if member != sender:  # Avoid notifying the sender
                 # Create a notification for each member
+                user = User.objects.filter(id=member.id).first()
                 notification = Notification.objects.create(
-                    user=member,
+                    user=user,
                     message=f"New message in {group.name} from {sender.username}: {instance.content[:50]}"
                 )
 
@@ -288,3 +291,14 @@ def notify_group_members(sender, instance, created, **kwargs):
                         "payload": notification
                     }
                 )
+
+@receiver(post_save, sender=GroupMessage)
+def broadcast_group_message(sender, instance, created, **kwargs):
+    if created:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            instance.group.group_name, {
+                "type": "chat_message",
+                "payload": model_to_dict(instance)
+            }
+        )
