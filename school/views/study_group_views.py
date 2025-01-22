@@ -78,8 +78,3 @@ class StudyGroupDetail(generics.RetrieveUpdateDestroyAPIView):
             group.members.add(student)
 
         serializer.save()
-
-class CreateGroupMessage(generics.CreateAPIView):
-    queryset = GroupMessage
-    serializer_class = GroupMessageSerializer
-    view_permissions = {'post': {'student': True}}

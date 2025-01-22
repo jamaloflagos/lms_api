@@ -291,14 +291,3 @@ def notify_group_members(sender, instance, created, **kwargs):
                         "payload": notification
                     }
                 )
-
-@receiver(post_save, sender=GroupMessage)
-def broadcast_group_message(sender, instance, created, **kwargs):
-    if created:
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            instance.group.group_name, {
-                "type": "chat_message",
-                "payload": model_to_dict(instance)
-            }
-        )
