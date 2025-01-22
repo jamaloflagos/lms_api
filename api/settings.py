@@ -34,6 +34,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://lms-six-chi.vercel.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, authentication headers)
