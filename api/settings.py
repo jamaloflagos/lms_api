@@ -40,7 +40,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, authentication headers)
 
 # Ensure CORS_ALLOW_ALL_ORIGINS is NOT set or set it to False
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 
