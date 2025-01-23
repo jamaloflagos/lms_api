@@ -89,8 +89,8 @@ SIMPLE_JWT = {
 }
 
 MIDDLEWARE = [
-    "school.middleware.LogRequestMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "school.middleware.LogRequestMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
