@@ -38,13 +38,16 @@ CORS_ALLOWED_ORIGINS = [
     "https://lms-six-chi.vercel.app"
 ]
 
-CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, authentication headers)
+CORS_ALLOW_CREDENTIALS = True
 
-# Ensure CORS_ALLOW_ALL_ORIGINS is NOT set or set it to False
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOW_HEADERS = DEFAULT_HEADERS 
-
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "x-csrftoken",
+    "x-requested-with",
+]
 # Application definition
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
