@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
+from .defaults import DEFAULT_HEADERS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +42,8 @@ CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, authentication head
 
 # Ensure CORS_ALLOW_ALL_ORIGINS is NOT set or set it to False
 CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_HEADERS = DEFAULT_HEADERS 
 
 # Application definition
 
