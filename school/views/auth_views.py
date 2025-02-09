@@ -46,7 +46,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
-        print(request)
         response = super().post(request, *args, **kwargs)
         refresh_token = response.data.get('refresh')
         access_token = response.data.get('access')
@@ -56,8 +55,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 key='refresh_token',
                 value=refresh_token,
                 httponly=True,
-                secure=True,  # Set to False if you're testing locally
-                samesite='Lax',  # Can be 'Strict' or 'None' depending on your requirements
+                secure=True,
+                samesite='None',
                 max_age=7 * 24 * 60 * 60,  # 7 days
             )
             del response.data['refresh']  # Remove refresh token from response body

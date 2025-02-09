@@ -183,7 +183,7 @@ class AssignmentList(generics.ListCreateAPIView):
     serializer_class = AssignmentSerializer
     view_permissions = {
         'post': {'teacher': True},
-        'get' : {'student': True, 'teacher': True}
+        'get' : {'student': True, 'teacher': True, 'anon': True}
     }
 
     def get_queryset(self):
@@ -201,7 +201,7 @@ class AssignmentList(generics.ListCreateAPIView):
                 if class_subject:
                     queryset = Assignment.objects.filter(
                         class_subject__subject=subject, class_subject___class=_class
-                    ).order_by("date_posted")
+                    ).order_by("-date_posted")
                 else:
                     queryset = Assignment.objects.none()
             else:

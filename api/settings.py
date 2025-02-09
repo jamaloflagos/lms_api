@@ -151,32 +151,32 @@ DATABASES = {
     }
 }
 
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
-        "OPTIONS": {
-            "access_key": config("AWS_ACCESS_KEY_ID"),
-            "secret_key": config("AWS_SECRET_ACCESS_KEY"),
-            "bucket_name": config("AWS_STORAGE_BUCKET_NAME"),
-            "region_name": config("AWS_S3_REGION_NAME"),
-            "file_overwrite": False,
-            "querystring_auth": False,
-            "custom_domain": f"{config('AWS_STORAGE_BUCKET_NAME')}.s3.{config('AWS_S3_REGION_NAME')}.amazonaws.com",
-        },
-    },
-    "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "bucket_name": config("AWS_STORAGE_BUCKET_NAME"),
-            "access_key": config("AWS_ACCESS_KEY_ID"),
-            "secret_key": config("AWS_SECRET_ACCESS_KEY"),
-            "region_name": config("AWS_S3_REGION_NAME"),
-            "file_overwrite": False,
-            "querystring_auth": False,
-            # 'default_acl': 'public-read',
-        },
-    },
-}
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "storages.backends.s3.S3Storage",
+#         "OPTIONS": {
+#             "access_key": config("AWS_ACCESS_KEY_ID"),
+#             "secret_key": config("AWS_SECRET_ACCESS_KEY"),
+#             "bucket_name": config("AWS_STORAGE_BUCKET_NAME"),
+#             "region_name": config("AWS_S3_REGION_NAME"),
+#             "file_overwrite": False,
+#             "querystring_auth": False,
+#             "custom_domain": f"{config('AWS_STORAGE_BUCKET_NAME')}.s3.{config('AWS_S3_REGION_NAME')}.amazonaws.com",
+#         },
+#     },
+#     "staticfiles": {
+#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+#         "OPTIONS": {
+#             "bucket_name": config("AWS_STORAGE_BUCKET_NAME"),
+#             "access_key": config("AWS_ACCESS_KEY_ID"),
+#             "secret_key": config("AWS_SECRET_ACCESS_KEY"),
+#             "region_name": config("AWS_S3_REGION_NAME"),
+#             "file_overwrite": False,
+#             "querystring_auth": False,
+#             # 'default_acl': 'public-read',
+#         },
+#     },
+# }
 
 
 # Password validation
